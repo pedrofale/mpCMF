@@ -109,14 +109,12 @@ class Inference(object):
 		""" 
 		a = digamma(self.a[0]) - np.log(self.a[1]) # NxK
 		b = digamma(self.b[0]) - np.log(self.b[1]) # PxK
-			
+		aux = np.zeros((K,))	
 		for i in range(N):
-			for j in range(P):
-				total = 0.
+			for j in range(P)
 				for k in range(K):
-					aux = np.exp(a[i, k] + b[j, k])
-					total = total + aux
-					self.r[i,j,k] = aux / total 
+					aux[k] = np.exp(a[i, k] + b[j, k])
+				self.r[i,j,:] = aux / np.sum(aux)
 
 	def run_cavi(self, n_iterations=10, return_elbo=True):
 		""" Run coordinate ascent variational inference and return 
