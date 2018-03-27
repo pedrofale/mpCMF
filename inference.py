@@ -141,8 +141,3 @@ class Inference(object):
 		if return_elbo: 
 			return ELBO
 
-def sample_gamma(shape, rate, size=None):
-	return np.random.gamma(shape, 1./rate, size=size)
-
-def sample_bernoulli(p, size=None):
-	return np.random.binomial(1, p, size=size)
