@@ -28,7 +28,7 @@ class Inference(object):
 	def compute_elbo(self):
 		""" Computes the Evidence Lower BOund with the current variational parameters.
 		"""
-		# likelihood term
+		# joint density term
 		elbo = 0.		
 
 		# entropy term
@@ -47,15 +47,12 @@ class Inference(object):
 		a_ik1 = alpha_k1 + sum_j(E[D_ij]*E[Z_ijk])
 		a_ik2 = alpha_k2 + sum_j(E[D_ij]*E[V_jk])
 		
-		Arguments:
+		Requires:
 		alpha	-- 1xK: the prior alphas vector
 		p	-- NxP: E[D] vector
 		X	-- NxP: the data
 		r	-- NxPxK: E[Z]/X vector 
 		b	-- PxK: parameters of q(V)
-		
-		Returns:
-		a	-- NxK: parameters of q(U)
 		"""
 		
 		total = 0.
@@ -71,7 +68,7 @@ class Inference(object):
 		b_jk1 = beta_k1 + sum_i(E[D_ij]*E[Z_ijk])
 		b_jk2 = beta_k2 + sum_i(E[D_ij]*E[U_ik])
 		
-		Arguments:
+		Requires:
 		beta	-- the prior betas vector
 		p	-- E[D] vector
 		X	-- the data
@@ -91,7 +88,7 @@ class Inference(object):
 		
 		logit(p_ij) = logit(pi_j) - sum_k(E[U_ik]*E[V_jk])
 		
-		Arguments:
+		Requires:
 		pi	-- prior dropout probabilities
 		a	-- parameters of q(U)
 		b	-- parameters of q(V)
@@ -106,7 +103,7 @@ class Inference(object):
 		
 		Note that, for X distributed as Gamma(a, b), E[logX] = digamma(a) - log(b)
 
-		Arguments:
+		Requires:
 		a	-- parameters of q(U)
 		b	-- parameters of q(V)
 		""" 
