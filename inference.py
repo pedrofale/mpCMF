@@ -57,7 +57,7 @@ class Inference(object):
 		
 		total = 0.
 		for j in range(self.P):
-			total = total + np.expand_dims(self.p[:, j], 1) * np.matmul(np.expand_dims(self.X[:, j], 1).T, self.r[:, j, :])]
+			total = total + np.expand_dims(self.p[:, j], 1) * np.matmul(np.expand_dims(self.X[:, j], 1).T, self.r[:, j, :])
 		self.a[0] = self.alpha[0] + total
 
 		self.a[1] = self.alpha[1] + np.matmul(self.p, self.b[0]/self.b[1])
@@ -78,7 +78,7 @@ class Inference(object):
 
 		total = 0.
 		for i in range(self.N):
-			total = total + np.expand_dims(self.p[i, :], 1) * np.matmul(np.expand_dims(self.X[i, :], 1).T, self.r[i, :, :])]
+			total = total + np.expand_dims(self.p[i, :], 1) * np.matmul(np.expand_dims(self.X[i, :], 1).T, self.r[i, :, :])
 		self.b[0] = self.beta[0] + total
 
 		self.b[1] = self.beta[1] + np.matmul(self.p, self.a[0]/self.a[1])
@@ -111,7 +111,7 @@ class Inference(object):
 		b = digamma(self.b[0]) - np.log(self.b[1]) # PxK
 		aux = np.zeros((K,))	
 		for i in range(N):
-			for j in range(P)
+			for j in range(P):
 				for k in range(K):
 					aux[k] = np.exp(a[i, k] + b[j, k])
 				self.r[i,j,:] = aux / np.sum(aux)
