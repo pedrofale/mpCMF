@@ -11,12 +11,12 @@ class Inference(object):
 		self.X = X
 		self.N = X.shape[0] # no of observations
 		self.P = X.shape[1] # no of genes
-		self.K = alpha.size # latent space dim
+		self.K = alpha.shape[1] # latent space dim
 		
 		# Hyperparameters		
-		self.alpha = alpha.repeat(self.N, axis=1) # 2xNxK
+		self.alpha = np.expand_dims(alpha, axis=1).repeat(self.N, axis=1) # 2xNxK
 		self.beta = beta # 2xPxK
-		self.pi = pi.repeat(self.N, axis=0) # NxP
+		self.pi =  np.expand_dims(pi, axis=0).repeat(self.N, axis=0) # NxP
 		self.logit_pi = np.log(self.pi / (1. - self.pi))
 
 		# Variational parameters
@@ -27,9 +27,10 @@ class Inference(object):
 
 	def compute_elbo(self):
 		""" Computes the Evidence Lower BOund with the current variational parameters.
+		J(q)_param = E[logp(var|-)] - E[logq(var;param)] + const
 		"""
-		# joint density term
-		elbo = 0.		
+		# complete conditional term
+		elbo = 0.
 
 		# entropy term
 		
@@ -81,7 +82,7 @@ class Inference(object):
 			total = total + np.expand_dims(self.p[i, :], 1) * np.matmul(np.expand_dims(self.X[i, :], 1).T, self.r[i, :, :])
 		self.b[0] = self.beta[0] + total
 
-		self.b[1] = self.beta[1] + np.matmul(self.p, self.a[0]/self.a[1])
+		self.b[1] = self.beta[1] + np.matmul(self.p.T, self.a[0]/self.a[1])
 
 	def update_p(self):
 		""" Update the vector p for all (i,j) pairs.
@@ -109,10 +110,10 @@ class Inference(object):
 		""" 
 		a = digamma(self.a[0]) - np.log(self.a[1]) # NxK
 		b = digamma(self.b[0]) - np.log(self.b[1]) # PxK
-		aux = np.zeros((K,))	
-		for i in range(N):
-			for j in range(P):
-				for k in range(K):
+		aux = np.zeros((self.K,))	
+		for i in range(self.N):
+			for j in range(self.P):
+				for k in range(self.K):
 					aux[k] = np.exp(a[i, k] + b[j, k])
 				self.r[i,j,:] = aux / np.sum(aux)
 
@@ -120,14 +121,14 @@ class Inference(object):
 		""" Run coordinate ascent variational inference and return 
 		variational parameters. Assess convergence via the ELBO. 
 		"""
-		ELBO = []
-		print("ELBO per iteration:")
+		if return_elbo:			
+			ELBO = []
+			print("ELBO per iteration:")
 		for it in range(n_iterations):
 			# update the local variables
-			for i in range(self.N):
-				self.update_a()
-				self.update_p()
-				self.update_r()
+			self.update_a()
+			self.update_p()
+			self.update_r()
 
 			# update global variables
 			self.update_b()	
