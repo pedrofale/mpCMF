@@ -20,10 +20,10 @@ class Inference(object):
 		self.logit_pi = np.log(self.pi / (1. - self.pi))
 
 		# Variational parameters
-		self.a = np.ones((2, self.N, self.K)) # parameters of q(U)
-		self.b = np.ones((2, self.P, self.K)) # parameters of q(V)
-		self.r = np.ones((self.N, self.P, self.K)) # parameters of q(Z)
-		self.p = np.ones((self.N, self.P)) # parameters of q(D)
+		self.a = np.ones((2, self.N, self.K)) + np.random.rand(2, self.N, self.K)# parameters of q(U)
+		self.b = np.ones((2, self.P, self.K)) + np.random.rand(2, self.P, self.K) # parameters of q(V)
+		self.r = np.ones((self.N, self.P, self.K)) * 0.5 # parameters of q(Z)
+		self.p = np.ones((self.N, self.P)) * 0.5 # parameters of q(D)
 
 	def compute_elbo(self):
 		""" Computes the Evidence Lower BOund with the current variational parameters.
@@ -56,12 +56,21 @@ class Inference(object):
 		b	-- PxK: parameters of q(V)
 		"""
 		
-		total = 0.
-		for j in range(self.P):
-			total = total + np.expand_dims(self.p[:, j], 1) * np.matmul(np.expand_dims(self.X[:, j], 1).T, self.r[:, j, :])
-		self.a[0] = self.alpha[0] + total
+		for i in range(self.N):
+			for k in range(self.K):
+				total1 = 0.
+				total2 = 0.
+				for j in range(self.P):
+					total1 = total1 + self.p[i, j] * self.X[i, j] * self.r[i, j, k]
+					total2 = total2 + self.p[i, j] * self.b[0, j, k] / self.b[1, j, k]
+				self.a[0, i, k] = self.alpha[0, i, k] + total1
+				self.a[1, i, k] = self.alpha[1, i, k] + total2
 
-		self.a[1] = self.alpha[1] + np.matmul(self.p, self.b[0]/self.b[1])
+		#for j in range(self.P):
+		#	total = total + np.expand_dims(self.p[:, j], 1) * np.matmul(np.expand_dims(self.X[:, j], 1).T, self.r[:, j, :])
+		#self.a[0] = self.alpha[0] + total
+
+		#self.a[1] = self.alpha[1] + np.matmul(self.p, self.b[0]/self.b[1])
 
 	def update_b(self):
 		""" Update the vector [b_1, b_2] for all (j,k) pairs.
@@ -77,12 +86,25 @@ class Inference(object):
 		a	-- parameters of q(U)
 		"""
 
-		total = 0.
-		for i in range(self.N):
-			total = total + np.expand_dims(self.p[i, :], 1) * np.matmul(np.expand_dims(self.X[i, :], 1).T, self.r[i, :, :])
-		self.b[0] = self.beta[0] + total
+		for j in range(self.P):
+			for k in range(self.K):
+				total1 = 0.
+				total2 = 0.
+				for i in range(self.N):
+					total1 = total1 + self.p[i, j] * self.X[i, j] * self.r[i, j, k]
+					total2 = total2 + self.p[i, j] * self.a[0, i, k] / self.a[1, i, k]
+				self.b[0, j, k] = self.beta[0, j, k] + total1
+				self.b[1, j, k] = self.beta[1, j, k] + total2
+		#total = 0.
+		#for j in range(self.P):
+		#	for k in range(self.K):
+		#		for i in range(self.N):
+		#			total = total + p[i, j] * X[i, j] * r[i, j, k]
+		#for i in range(self.N):
+		#	total = total + np.expand_dims(self.p[i, :], 1) * np.matmul(np.expand_dims(self.X[i, :], 1).T, self.r[i, :, :])
+		#self.b[0] = self.beta[0] + total
 
-		self.b[1] = self.beta[1] + np.matmul(self.p.T, self.a[0]/self.a[1])
+		#self.b[1] = self.beta[1] + np.matmul(self.p.T, self.a[0]/self.a[1])
 
 	def update_p(self):
 		""" Update the vector p for all (i,j) pairs.
@@ -94,8 +116,13 @@ class Inference(object):
 		a	-- parameters of q(U)
 		b	-- parameters of q(V)
 		"""
-		logit_p = self.logit_pi - np.matmul(self.a[0]/self.a[1], self.b[0]/self.b[1])
-		self.p = np.exp(logit_p) / (1. - np.exp(logit_p))
+		#logit_p = self.logit_pi - np.matmul(self.a[0]/self.a[1], (self.b[0]/self.b[1].T))
+		logit_p = np.zeros((self.N, self.P))
+		for i in range(self.N):
+			for j in range(self.P):
+				logit_p[i, j] = self.logit_pi[i, j] - np.sum(self.a[0, i, :]/self.a[1, i, :] * self.b[0, j, :]/self.b[1, j, :])
+		self.p = np.exp(logit_p) / (1. + np.exp(logit_p))
+		self.p[self.X != 0] = 1.
 
 	def update_r(self):
 		""" Update the vector r for all (i,j,k).
@@ -113,8 +140,9 @@ class Inference(object):
 		aux = np.zeros((self.K,))	
 		for i in range(self.N):
 			for j in range(self.P):
-				for k in range(self.K):
-					aux[k] = np.exp(a[i, k] + b[j, k])
+				aux = np.exp(a[i, :] + b[j, :])
+				#for k in range(self.K):
+				#	aux[k] = np.exp(a[i, k] + b[j, k])
 				self.r[i,j,:] = aux / np.sum(aux)
 
 	def run_cavi(self, n_iterations=10, return_elbo=True):
@@ -138,7 +166,8 @@ class Inference(object):
 				elbo_curr = self.compute_elbo()
 				ELBO.append(elbo_curr)
 				print("it. %d/%d: %f" % (it, n_iterations, elbo_curr))
-
+		print("Ran %d iterations of CAVI." % n_iterations)
+		
 		if return_elbo: 
 			return ELBO
 
