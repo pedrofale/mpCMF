@@ -145,13 +145,14 @@ class Inference(object):
 				#	aux[k] = np.exp(a[i, k] + b[j, k])
 				self.r[i,j,:] = aux / np.sum(aux)
 
-	def run_cavi(self, n_iterations=10, return_elbo=True):
+	def run_cavi(self, n_iterations=10, return_elbo=True, verbose=True):
 		""" Run coordinate ascent variational inference and return 
 		variational parameters. Assess convergence via the ELBO. 
 		"""
 		if return_elbo:			
 			ELBO = []
-			print("ELBO per iteration:")
+			if verbose:
+				print("ELBO per iteration:")
 		for it in range(n_iterations):
 			# update the local variables
 			self.update_a()
@@ -165,8 +166,10 @@ class Inference(object):
 				# compute the ELBO
 				elbo_curr = self.compute_elbo()
 				ELBO.append(elbo_curr)
-				print("it. %d/%d: %f" % (it, n_iterations, elbo_curr))
-		print("Ran %d iterations of CAVI." % n_iterations)
+				if verbose:
+					print("it. %d/%d: %f" % (it, n_iterations, elbo_curr))
+		if verbose:	
+			print("Ran %d iterations of CAVI." % n_iterations)
 		
 		if return_elbo: 
 			return ELBO
