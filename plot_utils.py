@@ -33,7 +33,7 @@ def plot_simulation_results(low_sep, high_sep, ax=None, legend=None, title=None,
         handles = []
         for i in range(n_boxes):
             # draw temporary lines and use them to create a legend
-            h, = plt.plot([1,1], colors[i])
+            h, = plt.plot([0,0], colors[i])
             handles.append(h)
         
         if show_legend:
