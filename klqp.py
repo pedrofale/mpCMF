@@ -6,7 +6,7 @@ model.
 import numpy as np
 from scipy.special import digamma
 
-class Inference(object):
+class CoordinateAscentVI(object):
 	def __init__(self, X, alpha, beta, pi):
 		self.X = X
 		self.N = X.shape[0] # no of observations
@@ -168,9 +168,8 @@ class Inference(object):
 				ELBO.append(elbo_curr)
 				if verbose:
 					print("it. %d/%d: %f" % (it, n_iterations, elbo_curr))
-		if verbose:	
-			print("Ran %d iterations of CAVI." % n_iterations)
-		
+			if verbose:
+				print("Iteration {}/{}".format(it+1, n_iterations), end="\r")	
 		if return_elbo: 
 			return ELBO
 
