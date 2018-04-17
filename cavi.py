@@ -1,6 +1,10 @@
 """ This file contains a class for inference of the parameters of the variational
 distributions that approximate the posteriors of the Probabilistic Count Matrix Factorization
-model. 
+model.
+
+The variational parameter updates were all derived from Equation (40) of Blei, D. et al 2016. 
+Basically, each parameter of the variational approximation of some latent variable is set as 
+the expected value of the natural parameter of that variable's complete conditional.
 """
 
 import numpy as np
