@@ -7,6 +7,8 @@ Basically, each parameter of the variational approximation of some latent variab
 the expected value of the natural parameter of that variable's complete conditional.
 """
 
+import time
+import math
 import numpy as np
 from scipy.special import digamma
 
@@ -40,11 +42,24 @@ class CoordinateAscentVI(object):
 		
 		return elbo
 
-	def predictive_ll(self):
-		""" Computes the predictive log-likelihood of the model with current
-		variational parameters.
+	def log_likelihood(self):
+		""" Computes the log-likelihood of the model with current
+		parameter estimates.
 		"""
-		raise NotImplementedError("Not sure how to compute the predictive LL yet.")
+		est_U = self.a[0] / self.a[1]
+		est_V = self.b[0] / self.b[1]
+
+		ll = 0.
+		for i in range(self.N):
+			for j in range(self.P):
+				param = np.dot(est_U[i,:], est_V[j, :].T)
+				if self.X[i, j] != 0:
+					ll = ll + np.log(self.p[i, j]) + self.X[i, j] * np.log(param) - param - math.log(math.factorial(self.X[i, j]))
+				else:
+					ll = ll + np.log(1-self.p[i,j] + self.p[i,j] * np.exp(-param))
+
+		return ll
+
 
 	def update_a(self):
 		""" Update the vector [a_1, a_2] for all (i,k) pairs.
@@ -149,14 +164,19 @@ class CoordinateAscentVI(object):
 				#	aux[k] = np.exp(a[i, k] + b[j, k])
 				self.r[i,j,:] = aux / np.sum(aux)
 
-	def run_cavi(self, n_iterations=10, return_elbo=True, verbose=True):
+	def run_cavi(self, n_iterations=10, return_ll=True, sampling_rate=10, max_time=60, verbose=True):
 		""" Run coordinate ascent variational inference and return 
 		variational parameters. Assess convergence via the ELBO. 
+		
+		Get the log-likelihood every sampling_rate seconds.
 		"""
-		if return_elbo:			
-			ELBO = []
-			if verbose:
-				print("ELBO per iteration:")
+		if return_ll:			
+			ll_it = []
+			ll_time = []
+
+		# init clock
+		start = time.time()
+		init = start
 		for it in range(n_iterations):
 			# update the local variables
 			self.update_a()
@@ -166,14 +186,21 @@ class CoordinateAscentVI(object):
 			# update global variables
 			self.update_b()	
 			
-			if return_elbo:
-				# compute the ELBO
-				elbo_curr = self.compute_elbo()
-				ELBO.append(elbo_curr)
+			if return_ll:
+				# compute the LL
+				ll_curr = self.log_likelihood()
+				end = time.time()
+				it_time = end - start
+				if it_time >= sampling_rate - 0.1*sampling_rate:
+					ll_time.append(ll_curr)
+					start = end
+				ll_it.append(ll_curr)
 				if verbose:
-					print("it. %d/%d: %f" % (it, n_iterations, elbo_curr))
-			if verbose:
+					print("Iteration {0}/{1}. Log-likelihood: {2:.3f}. Elapsed: {3:.0f} seconds".format(it, n_iterations, ll_curr, end-init), end="\r")
+				if (end - init) >= max_time:
+					break
+			elif verbose:
 				print("Iteration {}/{}".format(it+1, n_iterations), end="\r")	
-		if return_elbo: 
-			return ELBO
+		if return_ll: 
+			return ll_it, ll_time
 

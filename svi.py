@@ -5,6 +5,8 @@ model.
 Here we use Stochastic Variational Inference.
 """
 
+import time
+import math
 import numpy as np
 from scipy.special import digamma
 
@@ -38,13 +40,23 @@ class StochasticVI(object):
 		
 		return elbo
 
-	def predictive_ll(self):
+	def log_likelihood(self):
 		""" Computes the predictive log-likelihood of the model with current
-		variational parameters.
+		parameter estimates.
 		"""
+		est_U = self.a[0] / self.a[1]
+		est_V = self.b[0] / self.b[1]
 
+		ll = 0.
+		for i in range(self.N):
+			for j in range(self.P):
+				param = np.dot(est_U[i,:], est_V[j, :].T)
+				if self.X[i, j] != 0:
+					ll = ll + np.log(self.p[i, j]) + self.X[i, j] * np.log(param) - param - math.log(math.factorial(self.X[i, j]))
+				else:
+					ll = ll + np.log(1-self.p[i,j] + self.p[i,j] * np.exp(-param))
 		
-		raise NotImplementedError("Not sure how to compute the predictive LL yet.")
+		return ll
 
 	def update_a(self, minibatch_indexes):
 		""" Update the vector [a_1, a_2] for all (i,k) pairs.
@@ -135,7 +147,7 @@ class StochasticVI(object):
 				#	aux[k] = np.exp(a[i, k] + b[j, k])
 				self.r[i,j,:] = aux / np.sum(aux)
 
-	def run_svi(self, n_iterations=10, minibatch_size=10, return_elbo=True, verbose=True):
+	def run_svi(self, n_iterations=10, minibatch_size=10, delay=1., forget_rate=0.9, return_ll=True, sampling_rate=10, max_time=60, verbose=True):
 		""" Run stochastic variational inference and return 
 		variational parameters. Assess convergence via the ELBO. 
 		"""
@@ -144,13 +156,13 @@ class StochasticVI(object):
 			print("Setting minibatch size to 1.")
 			minibatch_size = 1
 
-		if return_elbo:			
-			ELBO = []
-			if verbose:
-				print("ELBO per iteration:")
+		if return_ll:			
+			ll_it = []
+			ll_time = []
 
-		delay = 1.
-		forget_rate = 0.9
+		# init clock
+		start = time.time()
+		init = start
 		for it in range(n_iterations):
 			# sample data point uniformly from the data set
 			mb_idx = np.random.randint(self.N, size=minibatch_size)
@@ -165,15 +177,21 @@ class StochasticVI(object):
 			step_size = (it + delay)**(-forget_rate)
 			self.update_b(mb_idx, step_size)
 		
-	
-			if return_elbo:
-				# compute the ELBO
-				elbo_curr = self.compute_elbo()
-				ELBO.append(elbo_curr)
+			if return_ll:
+				# compute the LL
+				ll_curr = self.log_likelihood()
+				end = time.time()
+				it_time = end - start
+				if it_time >= sampling_rate - 0.1*sampling_rate:
+					ll_time.append(ll_curr)
+					start = end
+				ll_it.append(ll_curr)
 				if verbose:
-					print("it. %d/%d: %f" % (it, n_iterations, elbo_curr))
-			if verbose:
+					print("Iteration {0}/{1}. Log-likelihood: {2:.3f}. Elapsed: {3:.0f} seconds".format(it+1, n_iterations, ll_curr, end-init), end="\r")
+				if (end - init) >= max_time:
+					break
+			elif verbose:
 				print("Iteration {}/{}".format(it+1, n_iterations), end="\r")	
-		if return_elbo: 
-			return ELBO
+		if return_ll: 
+			return ll_it, ll_time
 
