@@ -10,7 +10,7 @@ the expected value of the natural parameter of that variable's complete conditio
 import time
 import math
 import numpy as np
-from scipy.special import digamma
+from scipy.special import digamma, factorial
 
 class CoordinateAscentVI(object):
 	def __init__(self, X, alpha, beta, pi):
@@ -49,17 +49,26 @@ class CoordinateAscentVI(object):
 		est_U = self.a[0] / self.a[1]
 		est_V = self.b[0] / self.b[1]
 
-		ll = 0.
-		for i in range(self.N):
-			for j in range(self.P):
-				param = np.dot(est_U[i,:], est_V[j, :].T)
-				if self.X[i, j] != 0:
-					ll = ll + np.log(self.p[i, j]) + self.X[i, j] * np.log(param) - param - math.log(math.factorial(self.X[i, j]))
-				else:
-					ll = ll + np.log(1-self.p[i,j] + self.p[i,j] * np.exp(-param))
+		ll = np.zeros(self.X.shape)
+		param = np.dot(est_U, est_V.T)
+		idx = (self.X != 0)
+		ll[idx] = np.log(self.p[idx]) + self.X[idx] * np.log(param[idx]) - param[idx] - np.log(factorial(self.X[idx]))
+		idx = (self.X == 0)
+		ll[idx] = np.log(1-self.p[idx] + self.p[idx] * np.exp(-param[idx]))
+		ll = np.mean(ll)
+
+		# ll = 0.
+		# for i in range(self.N):
+		# 	for j in range(self.P):
+		# 		param = np.dot(est_U[i,:], est_V[j, :].T)
+		# 		if self.X[i, j] != 0:
+		# 			ll = ll + np.log(self.p[i, j]) + self.X[i, j] * np.log(param) - param - math.log(math.factorial(self.X[i, j]))
+		# 		else:
+		# 			ll = ll + np.log(1-self.p[i,j] + self.p[i,j] * np.exp(-param))
+
+		# ll = ll #/ self.N # average log likelihood over the samples
 
 		return ll
-
 
 	def update_a(self):
 		""" Update the vector [a_1, a_2] for all (i,k) pairs.

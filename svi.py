@@ -8,7 +8,7 @@ Here we use Stochastic Variational Inference.
 import time
 import math
 import numpy as np
-from scipy.special import digamma
+from scipy.special import digamma, factorial
 
 class StochasticVI(object):
 	def __init__(self, X, alpha, beta, pi):
@@ -40,69 +40,32 @@ class StochasticVI(object):
 		
 		return elbo
 
-  # 	def predictive_ll(self, X_test, n_iterations=10, S=100):
-		# """ Computes the posterior predictive distribution on data not used for 
-		# training: p(X_test | X). It uses the posterior parameter estimates and 
-		# Monte Carlo sampling to compute the integrals using S samples.
-		# """
-
-		# # First, compute the posterior over the local latent variables for each
-		# # of the new data points.
-		# for i in range()
-		# a = compute_a(X_test) # parameters of Gamma
-		# p = compute_p(X_test) # parameters of Bernoulli
-		
-		# # Monte Carlo estimation of the posterior predictive: use S samples
-		# U_samples = sample_gamma(a[0], a[1], size=S) # S by X_test.shape[0] by K
-		# D_samples = sample_bernoulli(p, size=S) # S by X_test.shape[0] by P
-		# V_samples = sample_gamma(self.b[0], self.b[1], size=S) # SxPxK
-
-		# pred_ll = log_likelihood(X_test, U_samples, V_samples, p) # SxN
-		# pred_ll = np.mean(pred_ll, axis=0) # N
-		# pred_ll = np.mean(pred_ll)
-			
-		# return pred_ll
-
-	# def update_a(self, a, X, p, r):
-	# 	N = X.shape[0]
-
-	# 	for i in range(N):	
-	# 		for k in range(self.K):
-	# 			total1 = 0.
-	# 			total2 = 0.
-	# 			for j in range(self.P):
-	# 				total1 = total1 + p[i, j] * X[i, j] * r[i, j, k]
-	# 				total2 = total2 + p[i, j] * self.b[0, j, k] / self.b[1, j, k]
-	# 			a[0, i, k] = self.alpha[0, i, k] + total1
-	# 			a[1, i, k] = self.alpha[1, i, k] + total2
-
-	# def update_p(self, p, X, a, r):
-	# 	N = X.shape[0]
-
-	# 	logit_p = np.zeros((self.P,))
-	# 	for i in range(N):
-	# 		for j in range(self.P):
-	# 			logit_p[j] = self.logit_pi[i, j] - np.sum(a[0, i, :]/a[1, i, :] * self.b[0, j, :]/self.b[1, j, :])
-	# 	p[i, :] = np.exp(logit_p) / (1. + np.exp(logit_p))		
-		
-	# 	p[X != 0] = 1.
-
 	def log_likelihood(self):
-		""" Computes the predictive log-likelihood of the model with current
+		""" Computes the log-likelihood of the model with current
 		parameter estimates.
 		"""
 		est_U = self.a[0] / self.a[1]
 		est_V = self.b[0] / self.b[1]
 
-		ll = 0.
-		for i in range(self.N):
-			for j in range(self.P):
-				param = np.dot(est_U[i,:], est_V[j, :].T)
-				if self.X[i, j] != 0:
-					ll = ll + np.log(self.p[i, j]) + self.X[i, j] * np.log(param) - param - math.log(math.factorial(self.X[i, j]))
-				else:
-					ll = ll + np.log(1-self.p[i,j] + self.p[i,j] * np.exp(-param))
+		ll = np.zeros(self.X.shape)
+		param = np.dot(est_U, est_V.T)
+		idx = (self.X != 0)
+		ll[idx] = np.log(self.p[idx]) + self.X[idx] * np.log(param[idx]) - param[idx] - np.log(factorial(self.X[idx]))
+		idx = (self.X == 0)
+		ll[idx] = np.log(1-self.p[idx] + self.p[idx] * np.exp(-param[idx]))
+		ll = np.mean(ll)
+
+		# ll = 0.
+		# for i in range(self.N):
+		# 	for j in range(self.P):
+		# 		param = np.dot(est_U[i,:], est_V[j, :].T)
+		# 		if self.X[i, j] != 0:
+		# 			ll = ll + np.log(self.p[i, j]) + self.X[i, j] * np.log(param) - param - math.log(math.factorial(self.X[i, j]))
+		# 		else:
+		# 			ll = ll + np.log(1-self.p[i,j] + self.p[i,j] * np.exp(-param))
 		
+		# ll = ll #/ self.N # average log likelihood over the samples
+
 		return ll
 
 	def update_a(self, minibatch_indexes):
