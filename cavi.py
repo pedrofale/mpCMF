@@ -51,8 +51,10 @@ class CoordinateAscentVI(object):
 
 		ll = np.zeros(self.X.shape)
 		param = np.dot(est_U, est_V.T)
+		
 		idx = (self.X != 0)
 		ll[idx] = np.log(self.p[idx]) + self.X[idx] * np.log(param[idx]) - param[idx] - np.log(factorial(self.X[idx]))
+		
 		idx = (self.X == 0)
 		ll[idx] = np.log(1-self.p[idx] + self.p[idx] * np.exp(-param[idx]))
 		ll = np.mean(ll)

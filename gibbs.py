@@ -2,8 +2,10 @@
 Count Matrix Factorization model using Gibbs sampling.
 """
 
+import time
 import numpy as np
-from utils import sample_gamma, sample_bernoulli
+from scipy.special import factorial
+from utils import sample_gamma, sample_bernoulli, log_likelihood
 
 class GibbsSampling(object):
 	def __init__(self, X, alpha, beta, pi):
@@ -17,11 +19,15 @@ class GibbsSampling(object):
 		self.beta = beta # 2xPxK
 		self.pi = np.expand_dims(pi, axis=0).repeat(self.N, axis=0) # NxP		
 
-		# Variables
-		self.U = np.ones((self.N, self.K))
-		self.V = np.ones((self.P, self.K))
-		self.Z = np.ones((self.N, self.P, self.K))
-		self.D = np.ones((self.N, self.P))
+		# Initialize variables with prior samples
+		self.U = self.sample_prior_U()		
+		self.V = self.sample_prior_V()
+		self.D = self.sample_prior_D()
+		self.Z = self.sample_prior_Z()
+		# self.U = np.ones((self.N, self.K))
+		# self.V = np.ones((self.P, self.K))
+		# self.Z = np.ones((self.N, self.P, self.K))
+		# self.D = np.ones((self.N, self.P))
 
 	def sample_prior_U(self):
 		# NxK
@@ -46,8 +52,20 @@ class GibbsSampling(object):
 		# if X_ij is not zero, there was surely no dropout
 		return sample_bernoulli(np.where(self.X != 0., np.ones((self.N, self.P)), self.pi))
 
+	def fullcond_D_param(self):
+		prob = np.zeros((self.N, self.P))
+		for i in range(self.N):
+			for j in range(self.P):
+				if self.X[i, j] != 0:
+					p = 1.
+				else:
+					e = np.exp(-np.dot(self.U[i, :], self.V[j, :].T))
+					p = self.pi[i, j] * e / (1. - self.pi[i, j] + 
+						self.pi[i, j] * e)
+				prob[i, j] = p
+		return prob
 
-	def sample_fullcond_U(self):
+	def update_U(self):
 		# Update U from its full conditional
 		for i in range(self.N):
 			for k in range(self.K):
@@ -59,7 +77,7 @@ class GibbsSampling(object):
 				self.U[i, k] = sample_gamma(self.alpha[0, i, k] + total1,
 								self.alpha[1, i, k] + total2)
 			
-	def sample_fullcond_V(self):
+	def update_V(self):
 		# Update V from its full conditional
 		for j in range(self.P):
 			for k in range(self.K):
@@ -71,7 +89,7 @@ class GibbsSampling(object):
 				self.V[j, k] = sample_gamma(self.beta[0, j, k] + total1,
 								self.beta[1, j, k] + total2)
 
-	def sample_fullcond_Z(self):
+	def update_Z(self):
 		# Update Z from its full conditional
 		for i in range(self.N):
 			for j in range(self.P):
@@ -80,7 +98,7 @@ class GibbsSampling(object):
 				self.Z[i, j, :] = np.random.multinomial(n=self.X[i, j], 
 										pvals=rho)
 		
-	def sample_fullcond_D(self):
+	def update_D(self):
 		# Update D from its full conditional
 		for i in range(self.N):
 			for j in range(self.P):
@@ -90,66 +108,90 @@ class GibbsSampling(object):
 					e = np.exp(-np.dot(self.U[i, :], self.V[j, :].T))
 					p = self.pi[i, j] * e / (1. - self.pi[i, j] + 
 						self.pi[i, j] * e)
-				self.D[i, j] = sample_bernoulli(p)	
+				self.D[i, j] = sample_bernoulli(p)
+
+	def update_pi(self, M=100):
+		""" Empirical Bayes update of the hyperparameter pi.
+
+		D_samples: MxNxP
+		"""
+		# pi is NxP
+		D_samples = np.zeros((M, self.N, self.P))
+		for m in range(M):
+			self.gibbs_sample()
+			D_samples[m] = self.D
+
+		pi = np.mean(D_samples, axis=(0,1))
+
+		self.pi = np.expand_dims(pi, axis=0).repeat(self.N, axis=0)
+		self.logit_pi = np.log(self.pi / (1. - self.pi))
 
 	def gibbs_sample(self):	
-		self.sample_fullcond_U()
-		self.sample_fullcond_V()
-		self.sample_fullcond_D()
-		self.sample_fullcond_Z()
-
-	def run_gibbs(self, n_iterations=100, init_prior=True, verbose=True, return_likelihood=True):
-		if return_likelihood:
-			likelihood = []
-
-		U_samples = []
-		V_samples = []
-		D_samples = []
-		Z_samples = []
-			
-		if init_prior:
-			# Initialize variables with prior samples
-			self.U = self.sample_prior_U()		
-			self.V = self.sample_prior_V()
-			self.D = self.sample_prior_D()
-			self.Z = self.sample_prior_Z()
-			
-			if return_likelihood:
-				likelihood.append(self.log_likelihood())
-		
-			U_samples.append(self.U)	
-			V_samples.append(self.V)
-			D_samples.append(self.D)
-			Z_samples.append(self.Z)
-
-		# Update variables by sampling iteratively from each full conditional
-		for n in range(1, n_iterations):
-			if verbose: 
-				print("Iteration {}/{}".format(n+1, n_iterations), end="\r")
+		self.update_U()
+		self.update_V()
+		self.update_D()
+		self.update_Z()
 	
-			self.sample_fullcond_U()
-			self.sample_fullcond_V()
-			self.sample_fullcond_D()
-			self.sample_fullcond_Z()
-			
-			if return_likelihood:
-				likelihood.append(self.log_likelihood())
-						
-			U_samples.append(self.U)	
-			V_samples.append(self.V)
-			D_samples.append(self.D)
-			Z_samples.append(self.Z)
-	
-		if return_likelihood:
-			return U_samples, V_samples, D_samples, Z_samples, likelihood
+	def estimate_U(self, U_samples):
+		return np.mean(U_samples, axis=0)
 
-		return U_samples, V_samples, D_samples, Z_samples
-	
-	def log_likelihood(self):
-		# likelihood = Poisson(D_ij * UV.T)
-		param = self.D * (np.dot(self.U, self.V.T))
-		ll = 0.
-		for i in range(self.N):
-			for j in range(self.P):
-				ll = ll + self.X[i, j]*np.log(1. + param[i, j]) - param[i, j] - self.X[i, j]
-		return ll
+	def estimate_V(self, V_samples):
+		return np.mean(V_samples, axis=0)
+
+	def estimate_p(self, D_samples):
+		return np.mean(D_samples, axis=0)
+
+	def run_gibbs(self, X_test=None, empirical_bayes=False, n_iterations=10, mc_samples=100, return_ll=True, sampling_rate=10, max_time=60, verbose=True):
+			""" Run Gibbs sampling and return posterior samples. 
+
+			Evaluate the log-likelihood every <sampling_rate> seconds.
+
+			If empirical_bayes, use mc_samples to compute the hyperparameter update
+			"""
+			U_samples = np.zeros((n_iterations, self.N, self.K))
+			V_samples = np.zeros((n_iterations, self.P, self.K))
+			D_samples = np.zeros((n_iterations, self.N, self.P))
+			Z_samples = np.zeros((n_iterations, self.N, self.P, self.K))
+
+			if return_ll:			
+				ll_it = []
+				ll_time = []
+
+			# init clock
+			start = time.time()
+			init = start
+			for it in range(n_iterations):				
+				if empirical_bayes:
+					self.update_pi(mc_samples)
+
+				self.gibbs_sample()
+
+				# add to list
+				U_samples[it] = self.U	
+				V_samples[it] = self.V
+				D_samples[it] = self.D
+				Z_samples[it] = self.Z
+				
+				if return_ll:
+					# compute the LL
+					# subsample the data to evaluate the ll in
+					idx = np.random.randint(self.N, size=100)
+
+					est_p = self.fullcond_D_param()[idx, :]
+					ll_curr = log_likelihood(self.X[idx], self.U[idx, :], self.V, est_p)
+					
+					end = time.time()
+					it_time = end - start
+					if it_time >= sampling_rate - 0.1*sampling_rate:
+						ll_time.append(ll_curr)
+						start = end
+					ll_it.append(ll_curr)
+					if verbose:
+						print("Iteration {0}/{1}. Log-likelihood: {2:.3f}. Elapsed: {3:.0f} seconds".format(it, n_iterations, ll_curr, end-init), end="\r")
+					if (end - init) >= max_time:
+						break
+				elif verbose:
+					print("Iteration {}/{}".format(it+1, n_iterations), end="\r")	
+			
+			if return_ll: 
+				return ll_it, ll_time

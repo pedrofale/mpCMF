@@ -10,6 +10,8 @@ import math
 import numpy as np
 from scipy.special import digamma, factorial
 
+np.random.seed(42)
+
 class StochasticVI(object):
 	def __init__(self, X, alpha, beta, pi):
 		self.X = X
@@ -49,8 +51,10 @@ class StochasticVI(object):
 
 		ll = np.zeros(self.X.shape)
 		param = np.dot(est_U, est_V.T)
+		
 		idx = (self.X != 0)
 		ll[idx] = np.log(self.p[idx]) + self.X[idx] * np.log(param[idx]) - param[idx] - np.log(factorial(self.X[idx]))
+		
 		idx = (self.X == 0)
 		ll[idx] = np.log(1-self.p[idx] + self.p[idx] * np.exp(-param[idx]))
 		ll = np.mean(ll)
