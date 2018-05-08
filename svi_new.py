@@ -9,7 +9,7 @@ import time
 import math
 import numpy as np
 from scipy.special import digamma, factorial
-from utils import log_likelihood
+from utils import log_likelihood, psi_inverse
 
 class StochasticVI(object):
 	def __init__(self, X, alpha, beta, pi):
@@ -150,45 +150,40 @@ class StochasticVI(object):
 
 		self.b = (1.-eta)*self.b + eta*np.mean(intermediate_b, axis=0)
 
-	def update_pi(self, minibatch_indexes, eta):
+	def update_pi(self, minibatch_indexes):
 		""" Empirical Bayes update of the hyperparameter pi
 		"""
 		# pi is NxP
-		S = minibatch_indexes.size
-		gradients = np.ones((S, self.P))
-
-		grad_denominator = self.pi * (1. - self.pi)
-		gradients = (self.p - self.pi) / grad_denominator
-
-		# print('PI:')
-		# print(self.pi)
-		# print('ETA:')
-		# print(eta)
-		# print('GRADS:')
-		# print(gradients * self.N)
-
-		#pi = self.pi + eta * np.expand_dims(np.mean(gradients * self.N, axis=0), axis=0).repeat(self.N, axis=0)
-		
 		pi = np.mean(self.p[minibatch_indexes], axis=0)
 		
 		self.pi = np.expand_dims(pi, axis=0).repeat(self.N, axis=0)
 		self.logit_pi = np.log(self.pi) - np.log(1. - self.pi)
 
-	def update_alpha(self, minibatch_indexes, eta):
-		S = minibatch_indexes.size
-		gradients = np.ones((S, self.K))
+	def update_alpha(self, minibatch_indexes):
+		""" Empirical Bayes update of the hyperparameter alpha
+		"""
+		# alpha1 and alpha2 are NxK
+		self.alpha[0, minibatch_indexes] = np.log(self.alpha[1, minibatch_indexes]) + np.mean(digamma(self.a[0, minibatch_indexes]) - np.log(self.a[1, minibatch_indexes]), axis=0)
+		self.alpha[0] = np.expand_dims(self.alpha[0, 0, :], axis=0).repeat(self.N, axis=0)
 
-		gradients = self.N * (np.log(self.alpha[1, minibatch_indexes]) - digamma(self.alpha[0, minibatch_indexes]) + 
-										digamma(self.a[0, minibatch_indexes]) - np.log(self.a[1, minibatch_indexes]))
+		for k in range(self.K):
+			print(self.alpha[0, 0, k])
+			self.alpha[0, 0, k] = psi_inverse(2., self.alpha[0, 0, k])
+		print('--')
+		self.alpha[0] = np.expand_dims(self.alpha[0, 0, :], axis=0).repeat(self.N, axis=0)
+		self.alpha[1] = self.alpha[0] / np.mean(self.a[0, minibatch_indexes] / self.a[1, minibatch_indexes], axis=0)
 
-		alpha = self.alpha[0, 0, :] + eta * np.mean(gradients, axis=0)
-		self.alpha[0] = np.expand_dims(alpha, axis=0).repeat(self.N, axis=0)
+	def update_beta(self, minibatch_indexes):
+		""" Empirical Bayes update of the hyperparameter beta
+		"""
+		self.beta[0] = np.log(self.beta[1]) + np.expand_dims(np.mean(digamma(self.b[0]) - np.log(self.b[1]), axis=0), axis=0).repeat(self.P, axis=0)
+		beta_1 = self.beta[0, 0, :]
 
-		gradients = self.N * (self.alpha[0, minibatch_indexes] / self.alpha[1, minibatch_indexes] - self.a[0, minibatch_indexes] / self.a[1, minibatch_indexes])
-		alpha = self.alpha[1, 0, :] + eta * np.mean(gradients, axis=0)
-		self.alpha[1] = np.expand_dims(alpha, axis=0).repeat(self.N, axis=0)
+		for k in range(self.K):
+			beta_1[k] = psi_inverse(2., self.beta[0, 0, k])
 
-		exit
+		self.beta[0] = np.expand_dims(beta_1, axis=0).repeat(self.P, axis=0)
+		self.beta[1] = self.beta[0] / np.mean(self.b[0] / self.b[1], axis=0)
 
 	def run_svi(self, X_test=None, empirical_bayes=False, n_iterations=10, minibatch_size=1, delay=1., forget_rate=0.9, return_ll=True, sampling_rate=10, max_time=60, verbose=True):
 		""" Run stochastic variational inference and return 
@@ -221,11 +216,11 @@ class StochasticVI(object):
 			step_size = (it+1. + delay)**(-forget_rate)
 			self.update_b(mb_idx, step_size)
 		
-			if empirical_bayes:	
+			if empirical_bayes:
 				# update hyperparameters
-				#self.update_pi(mb_idx, step_size)
-				self.update_alpha(mb_idx, step_size)
-				#self.update_beta(mb_idx, step_size)
+				self.update_pi(mb_idx)
+				self.update_alpha(mb_idx)
+				self.update_beta(mb_idx)
 
 			if return_ll:
 				# compute the LL
