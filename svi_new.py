@@ -163,14 +163,18 @@ class StochasticVI(object):
 		""" Empirical Bayes update of the hyperparameter alpha
 		"""
 		# alpha1 and alpha2 are NxK
-		self.alpha[0, minibatch_indexes] = np.log(self.alpha[1, minibatch_indexes]) + np.mean(digamma(self.a[0, minibatch_indexes]) - np.log(self.a[1, minibatch_indexes]), axis=0)
-		self.alpha[0] = np.expand_dims(self.alpha[0, 0, :], axis=0).repeat(self.N, axis=0)
+		S = minibatch_indexes.size
+
+		self.alpha[0, minibatch_indexes] = np.log(self.alpha[1, minibatch_indexes]) + np.expand_dims(np.mean(digamma(self.a[0, minibatch_indexes]) - np.log(self.a[1, minibatch_indexes]), axis=0), axis=0).repeat(S, axis=0)
+		alpha_1 = self.alpha[0, minibatch_indexes[0], :]
 
 		for k in range(self.K):
-			print(self.alpha[0, 0, k])
-			self.alpha[0, 0, k] = psi_inverse(2., self.alpha[0, 0, k])
-		print('--')
-		self.alpha[0] = np.expand_dims(self.alpha[0, 0, :], axis=0).repeat(self.N, axis=0)
+			alpha_1[k] = psi_inverse(2., self.alpha[0, minibatch_indexes[0], k])
+
+		if alpha_1[0] > 100:
+			exit
+
+		self.alpha[0] = np.expand_dims(alpha_1, axis=0).repeat(self.N, axis=0)
 		self.alpha[1] = self.alpha[0] / np.mean(self.a[0, minibatch_indexes] / self.a[1, minibatch_indexes], axis=0)
 
 	def update_beta(self, minibatch_indexes):
@@ -217,10 +221,11 @@ class StochasticVI(object):
 			self.update_b(mb_idx, step_size)
 		
 			if empirical_bayes:
-				# update hyperparameters
-				self.update_pi(mb_idx)
-				self.update_alpha(mb_idx)
-				self.update_beta(mb_idx)
+				if it > 10:
+					# update hyperparameters
+					self.update_pi(mb_idx)
+					self.update_alpha(mb_idx)
+					self.update_beta(mb_idx)
 
 			if return_ll:
 				# compute the LL

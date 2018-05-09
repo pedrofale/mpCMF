@@ -198,7 +198,7 @@ class CoordinateAscentVI(object):
 		"""
 		self.alpha[0] = np.log(self.alpha[1]) + np.expand_dims(np.mean(digamma(self.a[0]) - np.log(self.a[1]), axis=0), axis=0).repeat(self.N, axis=0)
 		alpha_1 = self.alpha[0, 0, :]
-
+		
 		for k in range(self.K):
 			alpha_1[k] = psi_inverse(2., self.alpha[0, 0, k])
 
