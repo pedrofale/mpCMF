@@ -6,8 +6,50 @@ def generate_U(N, K, C=2, alpha=1., eps=5.):
 	clusters = np.zeros((N,))
 	for c in range(C):
 		clusters[int(c*N/C):int((c+1)*N/C)] = clusters[int(c*N/C):int((c+1)*N/C)] + c
-		U[int(c*K/C):int((c+1)*K/C), int(c*N/C):int((c+1)*N/C)] = sample_gamma(alpha + eps, 1., size=(int(K/C), int(N/C)))
+		size = U[int(c*K/C):int((c+1)*K/C), int(c*N/C):int((c+1)*N/C)].shape
+		U[int(c*K/C):int((c+1)*K/C), int(c*N/C):int((c+1)*N/C)] = sample_gamma(alpha + eps, 1., size=size)
 	return U, clusters
+
+def generate_V(P, K, noisy_prop=0., M=2, beta=4., eps=4.):
+	P_0 = int((1. - noisy_prop) * P)
+
+	V = np.zeros((P, K))
+
+	if noisy_prop > 0.:
+		# noisy genes
+		V[(P-P_0):, :] = sample_gamma(0.7, 1, size=(P-P_0, K))
+
+	# ungrouped genes
+	V[:P_0, :] = sample_gamma(beta, 1, size=(P_0, K))
+
+	# grouped genes
+	for m in range(M):
+		size = V[int(m*P_0/M):int((m+1)*P_0/M), int(m*K/M):int((m+1)*K/M)].shape
+		V[int(m*P_0/M):int((m+1)*P_0/M), int(m*K/M):int((m+1)*K/M)] = sample_gamma(beta + eps, 1., size=size)
+	return V
+
+def generate_sparse_data(N, P, K, U=None, C=2, alpha=1., eps_U=5., V=None, M=2, beta=4., eps_V=4., noisy_prop=0., zero_prob=0.5, return_all=False):
+	if U is None:
+		U, clusters = generate_U(N, K, C, alpha, eps_U)
+	else:
+		K = U.shape[0]
+		N = U.shape[1]
+
+	assert K > M
+
+	if V is None:
+		V = generate_V(P, K, noisy_prop, M, beta, eps_V)
+
+	R = np.matmul(U.T, V.T) # KxN X PxK
+	X = np.random.poisson(R)
+
+	D = sample_bernoulli(p=zero_prob, size=(N, P))
+	Y = np.where(D == 1, np.zeros((N, P)), X)
+
+	if return_all:
+		return Y, D, X, R, V, U, clusters
+	else:
+		return Y
 
 def generate_data(N, P, K, U=None, C=2, alpha=1., eps=5., shape=2., rate=2., zero_prob=0.5, return_all=False):
 	if U is None:
