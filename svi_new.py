@@ -171,9 +171,6 @@ class StochasticVI(object):
 		for k in range(self.K):
 			alpha_1[k] = psi_inverse(2., self.alpha[0, minibatch_indexes[0], k])
 
-		if alpha_1[0] > 100:
-			exit
-
 		self.alpha[0] = np.expand_dims(alpha_1, axis=0).repeat(self.N, axis=0)
 		self.alpha[1] = self.alpha[0] / np.mean(self.a[0, minibatch_indexes] / self.a[1, minibatch_indexes], axis=0)
 
