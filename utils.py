@@ -17,7 +17,8 @@ def generate_V(P, K, noisy_prop=0., M=2, beta=4., eps=4.):
 
 	if noisy_prop > 0.:
 		# noisy genes
-		V[(P-P_0):, :] = sample_gamma(0.7, 1, size=(P-P_0, K))
+		size = V[(P-P_0):, :].shape
+		V[(P-P_0):, :] = sample_gamma(0.7, 1, size=size)
 
 	# ungrouped genes
 	V[:P_0, :] = sample_gamma(beta, 1, size=(P_0, K))
@@ -83,6 +84,30 @@ def log_likelihood(X, est_U, est_V, est_p):
 
 	ll = np.zeros(X.shape)
 	param = np.dot(est_U, est_V.T)
+	
+	idx = (X != 0)
+	ll[idx] = np.log(est_p[idx]) + X[idx] * np.log(param[idx]) - param[idx] #- np.log(factorial(X[idx]))
+	
+	idx = (X == 0)
+	ll[idx] = np.log(1.-est_p[idx] + est_p[idx] * np.exp(-param[idx]))
+
+	if np.any(np.isinf(ll)):
+		print(ll)
+		exit()
+
+	ll = np.mean(ll)
+
+	return ll
+
+def log_likelihood_sparse(X, est_U, est_V_, est_p, est_S):
+	""" Computes the log-likelihood of the sparse pCMF model from the inferred latent variables.
+	"""	
+	N = X.shape[0]
+
+	ll = np.zeros(X.shape)
+
+	est_V = est_V_ * est_S
+	param = np.dot(est_U, est_V_.T)
 	
 	idx = (X != 0)
 	ll[idx] = np.log(est_p[idx]) + X[idx] * np.log(param[idx]) - param[idx] - np.log(factorial(X[idx]))

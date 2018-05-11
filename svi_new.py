@@ -102,7 +102,8 @@ class StochasticVI(object):
 			p[:, :] = np.exp(logit_p) / (1. + np.exp(logit_p))		
 		else:
 			p[mb_idx, :] = np.exp(logit_p) / (1. + np.exp(logit_p))
-		p[X != 0] = 1.
+		p[X != 0] = 1. - 1e-8
+		p[X == 0] = 1e-8
 
 		return p
 

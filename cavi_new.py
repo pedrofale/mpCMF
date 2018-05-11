@@ -155,7 +155,8 @@ class CoordinateAscentVI(object):
 			for j in range(self.P):
 				logit_p[i, j] = self.logit_pi[i, j] - np.sum(a[0, i, :]/a[1, i, :] * self.b[0, j, :]/self.b[1, j, :])
 		p = np.exp(logit_p) / (1. + np.exp(logit_p))
-		p[X != 0] = 1.
+		p[X != 0] = 1. - 1e-8
+		p[X == 0] = 1e-8
 
 		return p
 
