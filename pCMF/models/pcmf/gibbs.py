@@ -5,7 +5,7 @@ Count Matrix Factorization model using Gibbs sampling.
 import time
 import numpy as np
 from scipy.special import factorial
-from utils import sample_gamma, sample_bernoulli, log_likelihood
+from pCMF.misc.utils import sample_gamma, sample_bernoulli, log_likelihood
 
 class GibbsSampling(object):
 	def __init__(self, X, alpha, beta, pi):

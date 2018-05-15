@@ -10,10 +10,9 @@ the expected value of the natural parameter of that variable's complete conditio
 """
 
 import time
-import math
 import numpy as np
 from scipy.special import digamma, factorial
-from utils import log_likelihood, psi_inverse, log_likelihood_sparse
+from pCMF.misc.utils import log_likelihood, psi_inverse, log_likelihood_sparse
 
 class CoordinateAscentVI(object):
 	def __init__(self, X, alpha, beta, pi_D, pi_S):

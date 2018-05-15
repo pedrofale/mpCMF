@@ -6,10 +6,9 @@ Here we use Stochastic Variational Inference.
 """
 
 import time
-import math
 import numpy as np
 from scipy.special import digamma, factorial
-from utils import log_likelihood, psi_inverse
+from pCMF.misc.utils import log_likelihood, psi_inverse
 
 class StochasticVI(object):
 	def __init__(self, X, alpha, beta, pi):
