@@ -1,0 +1,7 @@
+Silhouette scores (higher is better):
+[1m- PCA: 0.0555[0m
+- CAVI: 0.0337
+- SVI: -0.00105
+
+Silhouette of true U:
+0.548
