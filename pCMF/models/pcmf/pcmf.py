@@ -1,5 +1,5 @@
 import numpy as np
-from pCMF.models.pcmf import cavi_new, svi_new
+from pCMF.models.pcmf import cavi, svi
 from pCMF.misc import utils
 
 class PCMF(object):
@@ -38,7 +38,7 @@ class PCMF(object):
 		if algorithm in self.inferences:
 			if algorithm is 'cavi':
 				# Run CAVI and get estimates
-				self.inf = cavi_new.CoordinateAscentVI(self.train_data, self.alpha, self.beta, self.pi_D)
+				self.inf = cavi.CoordinateAscentVI(self.train_data, self.alpha, self.beta, self.pi_D)
 				self.ll = self.inf.run_cavi(X_test=test_data, n_iterations=n_iterations, empirical_bayes=empirical_bayes, return_ll=True, 
 					sampling_rate=self.sampling_rate, max_time=self.max_time, verbose=self.verbose)
 				self.est_U = self.inf.a[0] / self.inf.a[1] # VI estimate is the mean of the variational approximation
@@ -46,7 +46,7 @@ class PCMF(object):
 
 			if algorithm is 'svi':
 				# Run SVI and get estimates
-				self.inf = svi_new.StochasticVI(self.train_data, self.alpha, self.beta, self.pi_D)
+				self.inf = svi.StochasticVI(self.train_data, self.alpha, self.beta, self.pi_D)
 				self.ll = self.inf.run_svi(X_test=test_data, n_iterations=n_iterations, empirical_bayes=empirical_bayes, minibatch_size=minibatch_size, return_ll=True, 
 					sampling_rate=self.sampling_rate, max_time=self.max_time, verbose=self.verbose)
 				self.est_U = self.inf.a[0] / self.inf.a[1] # VI estimate is the mean of the variational approximation
