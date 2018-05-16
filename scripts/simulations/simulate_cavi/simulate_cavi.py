@@ -90,6 +90,8 @@ def main():
 	high_zi_low_sep = [pca_scores[2, 0, :], spca_scores[2, 0, :], pcmf_scores[2, 0, :]]
 	high_zi_high_sep = [pca_scores[2, 1, :], spca_scores[2, 1, :], pcmf_scores[2, 1, :]]
 
+	print('Plotting boxplots of silhouette scores...')
+
 	# Plot silhouette scores
 	legend=['PCA', 'SPCA', 'pCMF']
 	fig = plt.figure(figsize=(15, 4))
@@ -107,6 +109,7 @@ def main():
 	_ = [h.set_visible(False) for h in handles]
 
 	plt.savefig('{0}/boxplots.png'.format(newpath))
+	print('Done.')
 
 if __name__ == '__main__':
     try:
