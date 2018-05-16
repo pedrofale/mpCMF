@@ -57,4 +57,22 @@ def plot_simulation_results(low_sep, high_sep, ax=None, legend=None, title=None,
     if not show_legend and legend is not None:
         return ax, handles
     
-    return ax
+    return ax    
+
+def plot_convergence_curves(curves, labels=None, title='', xlabel='', filename=None):
+    if labels is not None:
+        assert len(curves) == len(labels)
+        for i in range(len(curves)):
+            plt.plot(curves[i], label=labels[i])
+    else:
+        for i in range(len(curves)):
+            plt.plot(curves[i])
+            
+    plt.ylabel('Average log-likelihood')
+    plt.xlabel(xlabel)
+    plt.title(title)
+    plt.legend()
+    if filename is not None:
+        plt.savefig(filename)
+    else:
+        plt.show()

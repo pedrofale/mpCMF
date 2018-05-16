@@ -3,19 +3,19 @@
 	"goal": "prove pCMF with CAVI works",
 	"num_ZI_levels": 3,
 	"num_separability_levels": 2,
-	"num_runs": 2,
-	"options": {"T": 2, "S": 1},
+	"num_runs": 5,
+	"options": {"T": 3600, "S": 5},
 	"inferences": {"eb": true, "mb": 50},
 	"experiments": [
 		{
 			"No ZI": [
 				{
 					"Low separability":
-					{"N":100, "P":5, "C":2, "K":2, "z_p":0, "eps_U":2, "mb":"None"}
+					{"N":100, "P":1000, "C":2, "K":2, "z_p":0, "eps_U":2, "mb":"None"}
 				},
 				{
 					"High separability":
-					{"N":100, "P":5, "C":2, "K":2, "z_p":0, "eps_U":10, "mb":"None"}
+					{"N":100, "P":1000, "C":2, "K":2, "z_p":0, "eps_U":10, "mb":"None"}
 				}
 			]
 		},
@@ -23,11 +23,11 @@
 			"Low ZI": [
 				{
 					"Low separability":
-					{"N":100, "P":5, "C":2, "K":2, "z_p":0.3, "eps_U":2, "mb":"None"}
+					{"N":100, "P":1000, "C":2, "K":2, "z_p":0.3, "eps_U":2, "mb":"None"}
 				},
 				{
 					"High separability":
-					{"N":100, "P":5, "C":2, "K":2, "z_p":0.3, "eps_U":10, "mb":"None"}
+					{"N":100, "P":1000, "C":2, "K":2, "z_p":0.3, "eps_U":10, "mb":"None"}
 				}
 			]
 		},
@@ -35,11 +35,11 @@
 			"High ZI": [
 				{
 					"Low separability":
-					{"N":100, "P":5, "C":2, "K":2, "z_p":0.6, "eps_U":2, "mb":"None"}
+					{"N":100, "P":1000, "C":2, "K":2, "z_p":0.6, "eps_U":2, "mb":"None"}
 				},
 				{
 					"High separability":
-					{"N":100, "P":5, "C":2, "K":2, "z_p":0.6, "eps_U":10, "mb":"None"}
+					{"N":100, "P":1000, "C":2, "K":2, "z_p":0.6, "eps_U":10, "mb":"None"}
 				}
 			]
 		}

@@ -69,6 +69,13 @@ def main():
 				cavi = PCMF(Y, n_components=exp['K'], sampling_rate=settings['options']['S'], max_time=settings['options']['T'], verbose=True)
 				cavi.infer(n_iterations=1000000)
 
+				if i == 0 and j == 0 and k == 0:
+					# Plot convergence curve of one iteration
+					print('Plotting convergence curve...')
+					plot_utils.plot_convergence_curves([cavi.ll[1]], title='Data set with N={} and P={}'.format(exp['N'], exp['P']), xlabel='Seconds', 
+						filename='{0}/convergence_iterations.png'.format(newpath))
+					print('Done.')
+
 				# Calculate silhouette scores method
 				pca_silh = silhouette_score(pca, clusters)
 				spca_silh = silhouette_score(spca, clusters)
