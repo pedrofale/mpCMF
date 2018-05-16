@@ -4,7 +4,7 @@
 	"num_ZI_levels": 3,
 	"num_separability_levels": 2,
 	"num_runs": 5,
-	"options": {"T": 3600, "S": 5},
+	"options": {"T": 600, "S": 1},
 	"inferences": {"eb": true, "mb": 50},
 	"experiments": [
 		{
