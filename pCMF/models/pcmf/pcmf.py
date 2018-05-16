@@ -51,9 +51,6 @@ class PCMF(object):
 					sampling_rate=self.sampling_rate, max_time=self.max_time, verbose=self.verbose)
 				self.est_U = self.inf.a[0] / self.inf.a[1] # VI estimate is the mean of the variational approximation
 				self.est_V = self.inf.b[0] / self.inf.b[1] # VI estimate is the mean of the variational approximation
-
-			if self.verbose:
-				print('')
 		else:
 			print('Inference algorithm unrecognized.')
 
