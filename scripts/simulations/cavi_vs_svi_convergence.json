@@ -1,0 +1,18 @@
+{
+	"name": "cavi_vs_svi_convergence",
+	"goal": "Compare SVI with CAVI on different size data sets. Show convergence plots and 2D scatter plots w/ silhouettes",
+	"experiments": [
+		{
+			"experiment_1" : {"N":100, "P":1000, "C":2, "K":10, "n_runs":1, "z_p":0.3, "eps_U":5., "mb":50}
+		},
+		{
+			"experiment_2" : {"N":1000, "P":1000, "C":2, "K":10, "n_runs":1, "z_p":0.3, "eps_U":5., "mb":100}
+		},
+		{
+			"experiment_3" : {"N":10000, "P":1000, "C":2, "K":10, "n_runs":1, "z_p":0.3, "eps_U":5., "mb":100}
+		},
+		{
+			"experiment_4" : {"N":100000, "P":1000, "C":2, "K":10, "n_runs":1, "z_p":0.3, "eps_U":5., "mb":100}
+		}
+	]
+}

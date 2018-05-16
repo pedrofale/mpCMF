@@ -1,0 +1,18 @@
+{
+	"name": "svi_minibatch_variation",
+	"goal": "Introduce SVI by varying minibatch size on a fixed size (large) data set and looking at the convergence plots",
+	"experiments": [
+		{
+			"experiment_1" : {"N":10000, "P":1000, "C":2, "K":10, "n_runs":1, "z_p":0.3, "eps_U":5., "mb":50}
+		},
+		{
+			"experiment_2" : {"N":10000, "P":1000, "C":2, "K":10, "n_runs":1, "z_p":0.3, "eps_U":5., "mb":100}
+		},
+		{
+			"experiment_3" : {"N":10000, "P":1000, "C":2, "K":10, "n_runs":1, "z_p":0.3, "eps_U":5., "mb":500}
+		},
+		{
+			"experiment_4" : {"N":10000, "P":1000, "C":2, "K":10, "n_runs":1, "z_p":0.3, "eps_U":5., "mb":1000}
+		}
+	]
+}

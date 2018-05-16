@@ -10,7 +10,7 @@ INPUT
 The file receives as input the data set dimensions, N and P. We always reduce to K=10.
 
 OUTPUT
-We output the average log likelihood curves per second and iteration, the 2D PCA plots
+We output the average log likelihood curves per second and iteration, the 2D TSNE plots
 of the inferred latent space and the silhouette_score of the K-dimensional latent space.
 """
 
@@ -24,6 +24,7 @@ sns.set_style('whitegrid')
 
 import numpy as np
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 from sklearn.metrics import silhouette_score
 from sklearn.model_selection import train_test_split
 from scipy.stats import gamma
@@ -55,7 +56,7 @@ def main():
 	S = 1. # ll sampling rate
 
 	# Run PCA
-	pca = PCA(n_components=2).fit_transform(Y_train)
+	pca = PCA(n_components=10).fit_transform(Y_train)
 
 	# Run CAVI and get estimates (pCMF)
 	alpha = np.ones((2, K))
@@ -65,9 +66,8 @@ def main():
 	pi_D = np.ones((P,)) * 0.5
 	print('CAVI:')
 	inf = cavi_new.CoordinateAscentVI(Y_train, alpha, beta, pi_D)
-	cavi_ll = inf.run_cavi(n_iterations=100000, empirical_bayes=True, return_ll=True, sampling_rate=S, max_time=T)
+	cavi_ll = inf.run_cavi(n_iterations=1000000, empirical_bayes=True, return_ll=True, sampling_rate=S, max_time=T)
 	cavi_U = inf.a[0] / inf.a[1] # VI estimate is the mean of the variational approximation
-	cavi_pca = PCA(n_components=2).fit_transform(cavi_U)
 	
 	print('\n')
 
@@ -80,13 +80,13 @@ def main():
 	mb = 100
 	print('SVI:')
 	inf = svi_new.StochasticVI(Y_train, alpha, beta, pi_D)
-	svi_ll = inf.run_svi(n_iterations=100000, minibatch_size=mb, empirical_bayes=True, return_ll=True, sampling_rate=S, max_time=T)
+	svi_ll = inf.run_svi(n_iterations=1000000, minibatch_size=mb, empirical_bayes=True, return_ll=True, sampling_rate=S, max_time=T)
 	svi_U = inf.a[0] / inf.a[1] # VI estimate is the mean of the variational approximation
-	svi_pca = PCA(n_components=2).fit_transform(svi_U)
 
 	print('\n')
 
 	# Plot convergence curves
+	print('Plotting convergence curves...')
 	plt.plot(cavi_ll[1], label='SVI-{}'.format(mb))
 	plt.plot(svi_ll[1], label='CAVI')
 	plt.ylabel('Average log-likelihood')
@@ -103,8 +103,14 @@ def main():
 	plt.legend()
 	plt.savefig('./output/convergence_iterations.png')
 
-	# Plot 2D PCA scatter plots
-	U_list = [pca, cavi_pca, svi_pca]
+	# Plot 2D TSNE scatter plots
+	print('Computing 2D TSNE projections...')
+	pca_tsne = TSNE(n_components=2).fit_transform(pca)
+	cavi_tsne = TSNE(n_components=2).fit_transform(cavi_U)
+	svi_tsne = TSNE(n_components=2).fit_transform(svi_U)
+
+	print('Plotting 2D TSNE scatter plots...')
+	U_list = [pca_TSNE, cavi_TSNE, svi_TSNE]
 	title_list = ['PCA', 'CAVI', 'SVI']
 	n_results = len(U_list)
 	assert len(U_list) == len(title_list)
@@ -120,10 +126,13 @@ def main():
 	        handlers.append(h)
 	    if labels is not None:
 	        ax.legend(handlers, labels, scatterpoints=1)
+	    plt.xlabel('TSNE 1')
+	    plt.Ylabel('TSNE 2')
 	    plt.title(title_list[i])
 	plt.savefig('./output/2D_scatter.png')
 
 	# Print out silhouette scores to file
+	print('Computing silhouette scores on the latent space...')
 	true_silh = silhouette_score(U_train, c_train)
 	cavi_silh = silhouette_score(cavi_U, c_train)
 	svi_silh = silhouette_score(svi_U, c_train)
@@ -143,5 +152,5 @@ if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        sys.stderr.write("User interrupt!\n")
+        sys.stderr.write("\nUser interrupt!\n")
         sys.exit(-1)
