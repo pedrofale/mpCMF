@@ -271,6 +271,8 @@ class CoordinateAscentVI(object):
 					break
 			elif verbose:
 				print("Iteration {}/{}".format(it+1, n_iterations), end="\r")	
+		if verbose:
+			print('')
 		if return_ll: 
 			return ll_it, ll_time
 
