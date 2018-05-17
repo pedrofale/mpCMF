@@ -16,7 +16,7 @@ import time
 import math
 import numpy as np
 from scipy.special import digamma, factorial
-from utils import log_likelihood
+from pCMF.misc.utils import log_likelihood
 
 class CoordinateAscentVI(object):
 	def __init__(self, X, alpha, beta, pi):

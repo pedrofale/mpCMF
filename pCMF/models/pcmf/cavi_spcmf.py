@@ -153,7 +153,6 @@ class CoordinateAscentVI(object):
 		return p
 
 	def update_p_S(self):
-		exit
 		ar = digamma(self.a[0]) - np.log(self.a[1]) # NxK
 		br = digamma(self.b[0]) - np.log(self.b[1]) # PxK
 

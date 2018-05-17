@@ -86,14 +86,12 @@ def log_likelihood(X, est_U, est_V, est_p):
 	param = np.dot(est_U, est_V.T)
 	
 	idx = (X != 0)
-	ll[idx] = np.log(est_p[idx]) + X[idx] * np.log(param[idx]) - param[idx] #- np.log(factorial(X[idx]))
+	factor = np.log(factorial(X[idx]))
+	factor = X[idx]
+	ll[idx] = X[idx] * np.log(param[idx]) - param[idx] - factor
 	
 	idx = (X == 0)
 	ll[idx] = np.log(1.-est_p[idx] + est_p[idx] * np.exp(-param[idx]))
-
-	if np.any(np.isinf(ll)):
-		print(ll)
-		exit()
 
 	ll = np.mean(ll)
 
@@ -110,7 +108,9 @@ def log_likelihood_sparse(X, est_U, est_V_, est_p, est_S):
 	param = np.dot(est_U, est_V_.T)
 	
 	idx = (X != 0)
-	ll[idx] = np.log(est_p[idx]) + X[idx] * np.log(param[idx]) - param[idx] #- np.log(factorial(X[idx]))
+	factor = np.log(factorial(X[idx]))
+	factor = X[idx]
+	ll[idx] = X[idx] * np.log(param[idx]) - param[idx] - factor
 	
 	idx = (X == 0)
 	ll[idx] = np.log(1.-est_p[idx] + est_p[idx] * np.exp(-param[idx]))
