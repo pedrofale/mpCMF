@@ -175,7 +175,7 @@ class GibbsSampling(object):
 				if return_ll:
 					# compute the LL
 					# subsample the data to evaluate the ll in
-					idx = np.random.randint(self.N, size=100)
+					idx = np.random.randint(self.N, size=np.min([100, self.N]))
 
 					est_p = self.fullcond_D_param()[idx, :]
 					ll_curr = log_likelihood(self.X[idx], self.U[idx, :], self.V, est_p)

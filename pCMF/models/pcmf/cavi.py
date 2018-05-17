@@ -251,7 +251,7 @@ class CoordinateAscentVI(object):
 					ll_curr = self.predictive_ll(X_test)
 				else:
 					# subsample the data to evaluate the ll in
-					idx = np.random.randint(self.N, size=100)
+					idx = np.random.randint(self.N, size=np.min([100, self.N]))
 					est_U = self.estimate_U(self.a[:, idx, :])
 					est_V = self.estimate_V(self.b)
 
