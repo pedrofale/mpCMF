@@ -86,23 +86,26 @@ class StochasticVI(object):
 		return a
 
 	def update_p(self, p, X, a, r, mb_idx=None):
+		N = X.shape[0]	
 		if mb_idx is None:
-			N = X.shape[0]
 			iterator = range(N)
 		else:
 			iterator = mb_idx
-			
-		logit_p = np.zeros((self.P,))
+
+		n = len(iterator)
+		
+		logit_p = np.zeros((self.N, self.P))
 		for i in iterator:
 			for j in range(self.P):
-				logit_p[j] = self.logit_pi[i, j] - np.sum(a[0, i, :]/a[1, i, :] * self.b[0, j, :]/self.b[1, j, :])
+				logit_p[i, j] = self.logit_pi[i, j] - np.sum(a[0, i, :]/a[1, i, :] * self.b[0, j, :]/self.b[1, j, :])
 		
 		if mb_idx is None:
 			p[:, :] = np.exp(logit_p) / (1. + np.exp(logit_p))		
 		else:
-			p[mb_idx, :] = np.exp(logit_p) / (1. + np.exp(logit_p))
-		p[X != 0] = 1. - 1e-8
-		p[X == 0] = 1e-8
+			p[mb_idx, :] = np.exp(logit_p[mb_idx, :]) / (1. + np.exp(logit_p[mb_idx, :]))
+		p[X != 0] = 1. - 1e-7
+		p[p == 1.] = 1 - 1e-7
+		p[p == 0.] = 1e-7
 
 		return p
 
@@ -218,11 +221,10 @@ class StochasticVI(object):
 			self.update_b(mb_idx, step_size)
 		
 			if empirical_bayes:
-				if it > 10:
-					# update hyperparameters
-					self.update_pi(mb_idx)
-					self.update_alpha(mb_idx)
-					self.update_beta(mb_idx)
+				# update hyperparameters
+				self.update_pi(mb_idx)
+				#self.update_alpha(mb_idx)
+				#self.update_beta(mb_idx)
 
 			if return_ll:
 				# compute the LL
