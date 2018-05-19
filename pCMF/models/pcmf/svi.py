@@ -8,14 +8,18 @@ Here we use Stochastic Variational Inference.
 import time
 import numpy as np
 from scipy.special import digamma, factorial
+from sklearn.metrics import silhouette_score
 from pCMF.misc.utils import log_likelihood, psi_inverse
 
 class StochasticVI(object):
-	def __init__(self, X, alpha, beta, pi):
+	def __init__(self, X, alpha, beta, pi, clusters=None):
 		self.X = X
 		self.N = X.shape[0] # no of observations
 		self.P = X.shape[1] # no of genes
 		self.K = alpha.shape[1] # latent space dim
+
+		# Cluster assignments of each data point in self.X
+		self.clusters = clusters
 
 		# Hyperparameters		
 		self.alpha = np.expand_dims(alpha, axis=1).repeat(self.N, axis=1) # 2xNxK
@@ -189,7 +193,7 @@ class StochasticVI(object):
 		self.beta[0] = np.expand_dims(beta_1, axis=0).repeat(self.P, axis=0)
 		self.beta[1] = self.beta[0] / np.mean(self.b[0] / self.b[1], axis=0)
 
-	def run_svi(self, X_test=None, empirical_bayes=False, n_iterations=10, minibatch_size=1, delay=1., forget_rate=0.9, return_ll=True, sampling_rate=10, max_time=60, verbose=True):
+	def run_svi(self, X_test=None, empirical_bayes=False, n_iterations=10, minibatch_size=1, delay=1., forget_rate=0.9, return_ll=True, return_silh=False, sampling_rate=10, max_time=60, verbose=True):
 		""" Run stochastic variational inference and return 
 		variational parameters.
 		"""
@@ -202,6 +206,13 @@ class StochasticVI(object):
 		if return_ll:			
 			ll_it = []
 			ll_time = []
+
+		if return_silh:
+			if self.clusters is None:
+				print("Can't compute silhouette score without cluster assignments.")
+				return_silh = False
+			else:
+				silh_it = []
 
 		# init clock
 		start = time.time()
@@ -251,8 +262,21 @@ class StochasticVI(object):
 				if (end - init) >= max_time:
 					break
 			elif verbose:
-				print("Iteration {}/{}".format(it+1, n_iterations), end="\r")	
+				print("Iteration {}/{}".format(it+1, n_iterations), end="\r")
+
+			if return_silh:
+				est_U = self.estimate_U(self.a)
+				silh = silhouette_score(est_U, self.clusters)
+				silh_it.append(silh)
+
 		if verbose:
 			print('')
+
 		if return_ll: 
-			return ll_it, ll_time
+			if not return_silh:
+				return ll_it, ll_time
+			else:
+				return ll_it, ll_time, silh_it
+		else:
+			if return_silh:
+				return silh_it
