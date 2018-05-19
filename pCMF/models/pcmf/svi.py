@@ -223,8 +223,8 @@ class StochasticVI(object):
 			if empirical_bayes:
 				# update hyperparameters
 				self.update_pi(mb_idx)
-				#self.update_alpha(mb_idx)
-				#self.update_beta(mb_idx)
+				self.update_alpha(mb_idx)
+				self.update_beta(mb_idx)
 
 			if return_ll:
 				# compute the LL
