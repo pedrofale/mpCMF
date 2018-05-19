@@ -100,8 +100,6 @@ class StochasticVI(object):
 				logit_p[i, j] = self.logit_pi[i, j] - np.sum(a[0, i, :]/a[1, i, :] * self.b[0, j, :]/self.b[1, j, :])
 		
 		if mb_idx is None:
-			print(p.shape)
-			print(logit_p.shape)
 			p[:, :] = np.exp(logit_p) / (1. + np.exp(logit_p))		
 		else:
 			p[mb_idx, :] = np.exp(logit_p[mb_idx, :]) / (1. + np.exp(logit_p[mb_idx, :]))
