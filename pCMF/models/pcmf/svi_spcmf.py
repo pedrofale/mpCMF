@@ -123,7 +123,7 @@ class StochasticVI(object):
 
 		n = len(iterator)
 		
-		logit_p = np.zeros((self.N, self.P))
+		logit_p = np.zeros((N, self.P))
 		for i in iterator:
 			for j in range(self.P):
 				logit_p[i, j] = self.logit_pi_D[i, j] - np.sum(self.p_S[j, :] * a[0, i, :]/a[1, i, :] * self.b[0, j, :]/self.b[1, j, :])
