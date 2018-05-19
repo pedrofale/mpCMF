@@ -1,3 +1,4 @@
+from pCMF.models.pcmf import klqp
 from pCMF.models.pcmf import pcmf
 from pCMF.models.pcmf import cavi
 from pCMF.models.pcmf import svi
