@@ -83,6 +83,20 @@ class KLqp(ABC):
 			
 		return pred_ll
 
+	def generate_from_posterior(return_all=False):
+		U = utils.sample_gamma(self.a[0], self.a[1])
+		V = utils.sample_gamma(self.b[0], self.b[1])
+
+		R = np.matmul(U.T, V)
+		X = np.random.poisson(R)
+
+		D = utils.sample_bernoulli(p=self.p)
+		Y = np.where(D == 1, np.zeros((self.N, self.P)), X)
+
+		if return_all:
+			return Y, U, V, D
+		return Y
+
 	@abstractmethod
 	def update_parameters(self):
 		pass
