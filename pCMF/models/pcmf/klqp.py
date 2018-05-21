@@ -27,9 +27,10 @@ class KLqp(ABC):
 		self.logit_pi = np.log(self.pi / (1. - self.pi))
 
 		# Variational parameters
-		self.a = np.ones((2, self.N, self.K)) + np.random.rand(2, self.N, self.K)# parameters of q(U)
+		self.a = np.ones((2, self.N, self.K)) + np.random.rand(2, self.N, self.K) # parameters of q(U)
 		self.b = np.ones((2, self.P, self.K)) + np.random.rand(2, self.P, self.K) # parameters of q(V)
-		self.r = np.ones((self.N, self.P, self.K)) * 1./self.K # parameters of q(Z)
+		self.r = np.random.dirichlet([1 / self.K] * self.K, size=(self.N, self.P,))
+		#self.r = np.ones((self.N, self.P, self.K)) * 0.5 # parameters of q(Z)
 		self.p = np.ones((self.N, self.P)) * 0.5 # parameters of q(D)
 
 		# Log-likelihood per iteration and per time unit
@@ -86,11 +87,11 @@ class KLqp(ABC):
 	def update_parameters(self):
 		pass
 
-	def run(self, n_iterations=10, calc_ll=False, calc_silh=False, return_U=False, max_time=60, sampling_rate=1., clusters=None):
+	def run(self, n_iterations=10, calc_ll=False, calc_silh=False, max_time=60, sampling_rate=1., clusters=None):
 		if calc_silh:
 			if clusters is None:
 				print("Can't compute silhouette score without cluster assignments.")
-				return_silh = False
+				calc_silh = False
 
 		# init clock
 		start = time.time()

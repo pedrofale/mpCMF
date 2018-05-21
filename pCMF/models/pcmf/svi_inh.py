@@ -146,7 +146,7 @@ class StochasticVI(KLqp):
 		# containing N replicates of sample n and a new step_size
 		step_size = (it+1. + self.delay)**(-self.forget_rate)
 		self.update_b(mb_idx, step_size)
-	
+
 		if self.empirical_bayes:
 			# update hyperparameters
 			self.update_pi(mb_idx)
