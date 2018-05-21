@@ -6,7 +6,7 @@ model.
 import time
 import numpy as np
 from sklearn.metrics import silhouette_score
-from pCMF.models.pcmf.utils import log_likelihood
+from pCMF.misc.utils import log_likelihood
 
 from abc import ABC, abstractmethod
 
