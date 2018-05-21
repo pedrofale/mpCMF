@@ -8,7 +8,7 @@ Here we use Stochastic Variational Inference.
 import numpy as np
 from scipy.special import digamma, factorial
 from pCMF.models.pcmf.klqp import KLqp
-from pCMF.misc.utils import log_likelihood, psi_inverse
+from pCMF.misc.utils import psi_inverse
 
 class StochasticVI(KLqp):
 	def __init__(self, *args, minibatch_size=1, delay=1, forget_rate=0.9, **kwargs):
