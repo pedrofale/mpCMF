@@ -3,3 +3,4 @@ __pycache__/
 notebooks/.ipynb_checkpoints/
 venv/
 SVIpCMF.egg-info/
+stfp-config.json
