@@ -133,18 +133,6 @@ class StochasticVI(object):
 		return r
 
 	def update_b(self, minibatch_indexes, eta):
-		""" Update the vector [b_1, b_2] for all (j,k) pairs using the ith local variables.
-		
-		b_jk1 = beta_k1 + N*E[D_ij]*E[Z_ijk]
-		b_jk2 = beta_k2 + N*E[D_ij]*E[U_ik]
-		
-		Requires:
-		beta	-- the prior betas vector
-		p	-- E[D] vector
-		X	-- the data
-		r	-- E[Z]/X vector
-		a	-- parameters of q(U)
-		"""
 		S = minibatch_indexes.size
 		intermediate_b = np.ones((S, 2, self.P, self.K))
 
@@ -220,7 +208,7 @@ class StochasticVI(object):
 		for it in range(n_iterations):
 			# sample data point uniformly from the data set
 			mb_idx = np.random.randint(self.N, size=minibatch_size)
-	
+
 			# update the local variables corresponding to the sampled data point
 			self.a = self.update_a(self.a, self.X, self.p, self.r, mb_idx=mb_idx)
 			self.p = self.update_p(self.p, self.X, self.a, self.r, mb_idx=mb_idx)
