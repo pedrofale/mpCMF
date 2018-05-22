@@ -77,12 +77,14 @@ def sample_gamma(shape, rate, size=None):
 def sample_bernoulli(p, size=None):
 	return np.random.binomial(1., p, size=size)
 
-def log_likelihood(X, est_U, est_V, est_p):
+def log_likelihood(X, est_U, est_V, est_p_D, est_S):
 	""" Computes the log-likelihood of the model from the inferred latent variables.
 	"""
 	N = X.shape[0]
 
 	ll = np.zeros(X.shape)
+
+	est_V = est_V * est_S
 	param = np.dot(est_U, est_V.T)
 	
 	idx = (X != 0)
@@ -91,29 +93,8 @@ def log_likelihood(X, est_U, est_V, est_p):
 	ll[idx] = X[idx] * np.log(param[idx]) - param[idx] - factor
 	
 	idx = (X == 0)
-	ll[idx] = np.log(1.-est_p[idx] + est_p[idx] * np.exp(-param[idx]))
+	ll[idx] = np.log(1.-est_p_D[idx] + est_p_D[idx] * np.exp(-param[idx]))
 
-	ll = np.mean(ll)
-
-	return ll
-
-def log_likelihood_sparse(X, est_U, est_V_, est_p, est_S):
-	""" Computes the log-likelihood of the sparse pCMF model from the inferred latent variables.
-	"""	
-	N = X.shape[0]
-
-	ll = np.zeros(X.shape)
-
-	est_V = est_V_ * est_S
-	param = np.dot(est_U, est_V_.T)
-	
-	idx = (X != 0)
-	factor = np.log(factorial(X[idx]))
-	factor = X[idx]
-	ll[idx] = X[idx] * np.log(param[idx]) - param[idx] - factor
-	
-	idx = (X == 0)
-	ll[idx] = np.log(1.-est_p[idx] + est_p[idx] * np.exp(-param[idx]))
 	ll = np.mean(ll)
 
 	return ll

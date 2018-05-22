@@ -121,8 +121,6 @@ class StochasticVI(object):
 		else:
 			iterator = mb_idx
 
-		n = len(iterator)
-		
 		logit_p = np.zeros((N, self.P))
 		for i in iterator:
 			for j in range(self.P):
