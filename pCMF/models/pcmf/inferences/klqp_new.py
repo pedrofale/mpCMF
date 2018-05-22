@@ -5,6 +5,7 @@ model.
 
 import time
 import numpy as np
+from scipy.special import factorial
 from sklearn.metrics import silhouette_score
 from pCMF.misc.utils import log_likelihood
 
@@ -21,6 +22,9 @@ class KLqp(ABC):
 
 		self.zi = pi_D is not None
 		self.sparse = pi_S is not None
+
+		# If counts are big, clip the log-likelihood to avoid inf values
+		self.clip_ll = np.any(np.isinf(factorial(self.X)))
 
 		# Empirical Bayes estimation of hyperparameters
 		self.empirical_bayes = empirical_bayes
@@ -113,7 +117,7 @@ class KLqp(ABC):
 		est_V = self.estimate_V(self.b)
 		est_S = self.estimate_S(self.p_S)
 
-		pred_ll = log_likelihood(X_test, est_U, est_V, p_D, est_S) # S
+		pred_ll = log_likelihood(X_test, est_U, est_V, p_D, est_S, clip=self.clip_ll) # S
 		pred_ll = np.mean(pred_ll)
 			
 		return pred_ll
@@ -163,7 +167,7 @@ class KLqp(ABC):
 				est_V = self.estimate_V(self.b)
 				est_S = self.estimate_S(self.p_S)
 
-				ll_curr = log_likelihood(self.X[idx], est_U, est_V, self.p_D[idx], est_S)
+				ll_curr = log_likelihood(self.X[idx], est_U, est_V, self.p_D[idx], est_S, clip=self.clip_ll)
 				self.ll_it.append(ll_curr)
 			
 			if calc_silh:
@@ -189,7 +193,7 @@ class KLqp(ABC):
 				print("Iteration {0}/{1}. Elapsed: {2:.0f} seconds".format(it+1, n_iterations, elapsed), end="\r")
 
 			# If maximum run time has passed, stop
-			if (end - init) >= max_time:
+			if elapsed >= max_time:
 				break
 
 		print('')

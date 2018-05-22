@@ -66,6 +66,7 @@ class CoordinateAscentVI(KLqp):
 		for i in range(N):
 			for j in range(self.P):
 				logit_p_D[i, j] = self.logit_pi_D[i, j] - np.sum(self.p_S[j, :] * a[0, i, :]/a[1, i, :] * self.b[0, j, :]/self.b[1, j, :])
+		
 		p_D = np.exp(logit_p_D) / (1. + np.exp(logit_p_D))
 		p_D[X != 0] = 1. - 1e-7
 		p_D[p_D == 1.] = 1 - 1e-7
@@ -102,7 +103,7 @@ class CoordinateAscentVI(KLqp):
 					self.p_D[:, j] * self.r[:, j, k] * self.X[:, j] * (ar[:, k] + br[j, k]))
 
 		self.p_S[logit_p_S > 300] = 1.
-		self.p_S[logit_p_S < 300] = np.exp(logit_p[logit_p_S < 300]) / (1. + np.exp(logit_p_S[logit_p_S < 300]))
+		self.p_S[logit_p_S < 300] = np.exp(logit_p_S[logit_p_S < 300]) / (1. + np.exp(logit_p_S[logit_p_S < 300]))
 		self.p_S[self.p_S == 0.] = 1e-7
 		self.p_S[self.p_S == 1.] = 1 - 1e-7
 

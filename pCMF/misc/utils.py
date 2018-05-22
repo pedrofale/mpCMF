@@ -77,7 +77,7 @@ def sample_gamma(shape, rate, size=None):
 def sample_bernoulli(p, size=None):
 	return np.random.binomial(1., p, size=size)
 
-def log_likelihood(X, est_U, est_V, est_p_D, est_S):
+def log_likelihood(X, est_U, est_V, est_p_D, est_S, clip=False):
 	""" Computes the log-likelihood of the model from the inferred latent variables.
 	"""
 	N = X.shape[0]
@@ -89,7 +89,8 @@ def log_likelihood(X, est_U, est_V, est_p_D, est_S):
 	
 	idx = (X != 0)
 	factor = np.log(factorial(X[idx]))
-	#factor = X[idx]
+	if clip:
+		factor = X[idx]
 	ll[idx] = X[idx] * np.log(param[idx]) - param[idx] - factor
 	
 	idx = (X == 0)
