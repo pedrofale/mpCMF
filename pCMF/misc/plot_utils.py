@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import numpy as np
+from scipy.stats import kde
 
 def setBoxColors(bp, colors):
     n_boxes = len(bp['boxes'])
@@ -15,6 +17,12 @@ def setBoxColors(bp, colors):
 
 def plot_simulation_results(low_sep, high_sep, ax=None, legend=None, title=None, ylabel=None,
                             colors = ['blue', 'red', 'green', 'yellow', 'cyan'], show_legend=False):
+    # low_sep and high_sep must both be lists of length equal to the number of methods to test (num of boxes)
+    # and for each method the array must be of shape nruns
+
+    # if n_boxes is odd, each xticklabel should be at the center box
+    # if it is even, each xticklabel should be between the 2 center boxes
+
     n_boxes = len(low_sep)
     
     if ax is None:
@@ -22,11 +30,13 @@ def plot_simulation_results(low_sep, high_sep, ax=None, legend=None, title=None,
         ax = plt.axes()
 
     # first boxplot pair
-    bp1 = plt.boxplot(low_sep, positions = range(1, n_boxes + 1), widths = 0.6)
+    bp1_pos = range(1, n_boxes + 1)
+    bp1 = plt.boxplot(low_sep, positions = bp1_pos, widths = 0.6)
     setBoxColors(bp1, colors)
 
     # second boxplot pair
-    bp2 = plt.boxplot(high_sep, positions = range(n_boxes + 3, n_boxes + 3 + n_boxes), widths = 0.6)
+    bp2_pos = range(n_boxes + 3, n_boxes + 3 + n_boxes)
+    bp2 = plt.boxplot(high_sep, positions = bp2_pos, widths = 0.6)
     setBoxColors(bp2, colors)
 
     if legend is not None:
@@ -46,7 +56,7 @@ def plot_simulation_results(low_sep, high_sep, ax=None, legend=None, title=None,
     else:
         plt.xlim(0, n_boxes*2 + 3)
     ax.set_xticklabels(['Low separability', 'High separability'])
-    ax.set_xticks([2, 7])
+    ax.set_xticks([np.mean(bp1_pos), np.mean(bp2_pos)])
 
     if ylabel is not None:
         plt.ylabel(ylabel)
@@ -76,3 +86,50 @@ def plot_convergence_curves(curves, labels=None, title='', xlabel='', filename=N
         plt.savefig(filename)
     else:
         plt.show()
+
+def plot_imputation_density(imputed, true, dropout_idx, title="", ymax=10, nbins=50, ax=None):
+    # imputed is NxP 
+    # true is NxP
+    
+    # We only care about the entries affected by dropouts
+    x, y = imputed[dropout_idx], true[dropout_idx]
+    
+    # let's only look at the values that are lower than ymax
+    mask = x < ymax
+    x = x[mask]
+    y = y[mask]
+    
+    mask = y < ymax
+    x = x[mask]
+    y = y[mask]
+    
+    # make the vectors the same size
+    l = np.minimum(x.shape[0], y.shape[0])
+    x = x[:l]
+    y = y[:l]
+    
+    data = np.vstack([x, y])
+
+    if ax is None:
+        plt.figure(figsize=(5, 5))
+    
+    axes = plt.gca()
+    axes.set_xlim([0, ymax])
+    axes.set_ylim([0, ymax])
+
+    # Evaluate a gaussian kde on a regular grid of nbins x nbins over data extents
+    k = kde.gaussian_kde(data)
+    xi, yi = np.mgrid[0:ymax:nbins*1j, 0:ymax:nbins*1j]
+    zi = k(np.vstack([xi.flatten(), yi.flatten()]))
+
+    plt.title(title, fontsize=12)
+    plt.ylabel("Imputed counts")
+    plt.xlabel('Original counts')
+
+    plt.pcolormesh(yi, xi, zi.reshape(xi.shape), cmap="Reds")
+
+    a, _, _, _ = np.linalg.lstsq(y[:,np.newaxis], x)
+    l = np.linspace(0, ymax)
+    plt.plot(l, a * l, color='black')
+
+    plt.plot(l, l, color='black', linestyle=":")

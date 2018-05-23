@@ -40,8 +40,8 @@ def generate_data(N, P, K, U=None, C=2, alpha=1., eps=5., shape=2., rate=2., zer
 	R = np.matmul(U.T, V)
 	X = np.random.poisson(R)
 
-	D = sample_bernoulli(p=zero_prob, size=(N, P))
-	Y = np.where(D == 1, np.zeros((N, P)), X)
+	D = sample_bernoulli(p=1-zero_prob, size=(N, P))
+	Y = np.where(D == 0, np.zeros((N, P)), X)
 
 	if return_all:
 		return Y, D, X, R, V, U, clusters
@@ -122,3 +122,10 @@ def psi_inverse(initial_x, y, num_iter=5):
         x_old = x_new
 
     return x_new
+
+def imputation_error(true, imputed, dropout_idx):
+	"""
+	Computes the L1 distance between the original count before dropout and the 
+	imputed value.
+	"""
+	return np.median(np.abs(true[dropout_idx] - imputed[dropout_idx]))
