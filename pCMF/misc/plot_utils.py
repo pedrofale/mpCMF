@@ -128,7 +128,7 @@ def plot_imputation_density(imputed, true, dropout_idx, title="", ymax=10, nbins
 
     plt.pcolormesh(yi, xi, zi.reshape(xi.shape), cmap="Reds")
 
-    a, _, _, _ = np.linalg.lstsq(y[:,np.newaxis], x)
+    a, _, _, _ = np.linalg.lstsq(y[:,np.newaxis], x, rcond=None)
     l = np.linspace(0, ymax)
     plt.plot(l, a * l, color='black')
 
