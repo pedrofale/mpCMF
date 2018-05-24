@@ -77,14 +77,14 @@ class KLqp(ABC):
 	def estimate_V(self, b):
 		return b[0] / b[1]
 
-	def estimate_D(self, p_D):
-		D = np.zeros((self.N, self.P))
-		D[p_D > 0.5] = 1.
+	def estimate_D(self, p_D, thres=0.5):
+		D = np.ones((self.N, self.P))
+		D[p_D > thres] = 1.
 		return D
 
-	def estimate_S(self, p_S, tresh=0.5):
+	def estimate_S(self, p_S, thres=0.5):
 		S = np.zeros((self.P, self.K))
-		S[p_S > tresh] = 1.
+		S[p_S > thres] = 1.
 		return S
 
 	def predictive_ll(self, X_test, n_iterations=10, S=100):
