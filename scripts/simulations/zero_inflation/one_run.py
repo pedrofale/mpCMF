@@ -52,10 +52,10 @@ def main():
 	C = 3 # number of clusters
 
 	T = 60 * 5
-	S = 1
+	S = 10
 
-	z_p = 0.3 # none, low, high ZI
-	eps = 5. # low, high separability
+	z_p = 0.3 # low ZI
+	eps = 5. # medium separability
 
 	Y, D, X, R, V, U, clusters = utils.generate_data(N, P, K, C=C, zero_prob=z_p,
                                                  eps=eps, return_all=True)

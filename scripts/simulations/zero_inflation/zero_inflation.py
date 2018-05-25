@@ -43,14 +43,14 @@ def main():
 	N = 100 # number of observations
 	P = 1000 # observation space dimensionality
 	K = 10 # latent space dimensionality
-	C = 3 # number of clusters
+	C = 2 # number of clusters
 
-	T = 60 * 5
-	S = 10
+	T = 60. * 5.
+	S = 10.
 
 	z_p_arr = [0., 0.3, 0.6] # none, low, high ZI
 	eps_arr = [2., 10.] # low, high separability
-	n_runs = 1 # number of experiments per setting
+	n_runs = 10 # number of experiments per setting
 
 	# Prior parameters
 	alpha = np.ones((2, K))
