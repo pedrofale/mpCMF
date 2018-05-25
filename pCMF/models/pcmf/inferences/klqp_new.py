@@ -13,8 +13,6 @@ from abc import ABC, abstractmethod
 
 class KLqp(ABC):
 	def __init__(self, X, alpha, beta, pi_D=None, pi_S=None, empirical_bayes=False):
-		np.random.seed(42)
-
 		self.X = X
 		self.N = X.shape[0] # no of observations
 		self.P = X.shape[1] # no of genes
