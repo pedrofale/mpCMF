@@ -125,7 +125,7 @@ def psi_inverse(initial_x, y, num_iter=5):
 
 def imputation_error(true, imputed, dropout_idx):
 	"""
-	Computes the L1 distance between the original count before dropout and the 
+	Computes the median L1 distance between the original count before dropout and the 
 	imputed value.
 	"""
 	return np.median(np.abs(true[dropout_idx] - imputed[dropout_idx]))
