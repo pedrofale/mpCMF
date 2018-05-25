@@ -76,7 +76,7 @@ class KLqp(ABC):
 		return b[0] / b[1]
 
 	def estimate_D(self, p_D, thres=0.5):
-		D = np.ones((self.N, self.P))
+		D = np.zeros((self.N, self.P))
 		D[p_D > thres] = 1.
 		return D
 
