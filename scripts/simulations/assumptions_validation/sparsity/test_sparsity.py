@@ -144,7 +144,7 @@ def main():
 				silh_pca_scores[i, j, k] = pca_silh
 				silh_gap_scores[i, j, k] = gap_silh
 				silh_zigap_scores[i, j, k] = zigap_silh
-				silh_Szigap_scores[i, j, k] = Szigap_silh
+				silh_szigap_scores[i, j, k] = szigap_silh
 
 				print('Calculating train data log-likelihood...')
 				# Calculate train data log-likelihood
