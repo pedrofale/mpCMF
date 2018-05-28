@@ -63,8 +63,8 @@ def generate_sparse_data(N, P, K, U=None, C=2, alpha=1., eps_U=5., V=None, M=2, 
 	R = np.matmul(U.T, V.T) # KxN X PxK
 	X = np.random.poisson(R)
 
-	D = sample_bernoulli(p=zero_prob, size=(N, P))
-	Y = np.where(D == 1, np.zeros((N, P)), X)
+	D = sample_bernoulli(p=1-zero_prob, size=(N, P))
+	Y = np.where(D == 0, np.zeros((N, P)), X)
 
 	if return_all:
 		return Y, D, X, R, V, U, clusters
@@ -91,10 +91,10 @@ def log_likelihood(X, est_U, est_V, est_p_D, est_S, clip=False):
 	factor = np.log(factorial(X[idx]))
 	if clip:
 		factor = X[idx]
-	ll[idx] = X[idx] * np.log(param[idx]) - param[idx] - factor
+	ll[idx] = X[idx] * np.log(param[idx] + 1e-7) - param[idx] - factor
 	
 	idx = (X == 0)
-	ll[idx] = np.log(1.-est_p_D[idx] + est_p_D[idx] * np.exp(-param[idx]))
+	ll[idx] = np.log(1.-est_p_D[idx] + est_p_D[idx] * np.exp(-param[idx]) + 1e-7)
 
 	ll = np.mean(ll)
 

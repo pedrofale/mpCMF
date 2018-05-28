@@ -85,7 +85,7 @@ class CoordinateAscentVI(KLqp):
 		for i in range(N):
 			for j in range(self.P):
 				if np.all(S[j, :] == 0.):
-					r[i, j, :] = 0.
+					r[i, j, :] = aux
 				else:
 					aux = S[j, :] * np.exp(ar[i, :] + br[j, :])
 					r[i, j, :] = aux / np.sum(aux)
