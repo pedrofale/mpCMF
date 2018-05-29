@@ -123,7 +123,7 @@ class StochasticVI(KLqp):
 		logit_p_S = (1.-eta)*self.logit_p_S + eta*np.mean(intermediate_logit_p_S, axis=0)		
 		
 		self.p_S[logit_p_S > 300] = 1.
-		self.p_S[logit_p_S < 300] = np.exp(logit_p_S[logit_p_S < 300]) / (1. + np.exp(logit_p[logit_p_S < 300]))
+		self.p_S[logit_p_S < 300] = np.exp(logit_p_S[logit_p_S < 300]) / (1. + np.exp(logit_p_S[logit_p_S < 300]))
 		self.p_S[self.p_S == 0.] = 1e-7
 		self.p_S[self.p_S == 1.] = 1 - 1e-7
 

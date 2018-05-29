@@ -62,6 +62,7 @@ class KLqp(ABC):
 		self.p_S = np.ones((self.P, self.K)) # parameters of q(S)
 		if self.sparse:
 			 self.p_S = self.p_S * 0.9
+			 self.logit_p_S = np.log(self.p_S / (1. - self.p_S))
 
 		# Log-likelihood per iteration and per time unit
 		self.ll_it = []
