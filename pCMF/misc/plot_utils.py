@@ -90,7 +90,7 @@ def plot_convergence_curves(curve_list, label_list=None, ax=None, legend=None, t
         plt.legend()
     if ax is None:
         if filename is not None:
-            plt.savefig(filename)
+            plt.savefig(filename, bbox_inches='tight')
         else:
             plt.show()
 
@@ -120,8 +120,7 @@ def plot_tsne(tsne, clusters, labels=None, ax=None, legend=None, title='', xlabe
         fig = plt.figure()
         ax = plt.axes()
     
-    C = np.unique(clusters).size
-    for c in range(C):
+    for c in np.unique(clusters):
         if labels is not None:
             ax.scatter(tsne[clusters==c, 0], tsne[clusters==c, 1], s=s, alpha=alpha, label=labels[clusters==c][0])
         else:
@@ -133,11 +132,11 @@ def plot_tsne(tsne, clusters, labels=None, ax=None, legend=None, title='', xlabe
     plt.title(title)
     if ax is None:
         if filename is not None:
-            plt.savefig(filename)
+            plt.savefig(filename, bbox_inches='tight')
         else:
             plt.show()
 
-def plot_sorted_tsnes(model_list, clusters, labels=None, ax=None, legend=None, title='', s=30, alpha=0.7, bbox_to_anchor=[1., 1.], filename=None):
+def plot_sorted_tsnes(model_list, clusters, labels=None, ax=None, nrows=1, ncols=None, legend=None, title='', s=30, alpha=0.7, bbox_to_anchor=[1., 1.], filename=None):
     # Sort by decreasing silhouette
     names = []
     tsnes = []
@@ -150,22 +149,27 @@ def plot_sorted_tsnes(model_list, clusters, labels=None, ax=None, legend=None, t
     sorted_scores = sorted(scores.items(), key=operator.itemgetter(1), reverse=True)
     
     # Plot in decreasing silhouette order
+    nresults = len(model_list)
+    nrows = nrows
+    if ncols is None:
+        ncols = nresults
+
     if ax is None:
         fig = plt.figure(figsize=(16, 4))
 
-    for i in range(len(model_list)):
-        ax = plt.subplot(1, len(model_list), i+1)
+    for i in range(nresults):
+        ax = plt.subplot(nrows, ncols, i+1)
         plot_tsne(tsnes[names.index(sorted_scores[i][0])], clusters, labels=labels, ax=ax, s=s, alpha=alpha)
         plt.title(sorted_scores[i][0])
     if labels is not None and legend:
         plt.legend(bbox_to_anchor=bbox_to_anchor, frameon=True)
     
     if filename is not None:
-        plt.savefig(filename)
+        plt.savefig(filename, bbox_inches='tight')
     else:
         plt.show()
 
-def plot_imputation_density(imputed, true, dropout_idx, title="", ymax=10, nbins=50, ax=None, cmap="Greys"):
+def plot_imputation_density(imputed, true, dropout_idx, title="", ymax=10, nbins=50, ax=None, cmap="Greys", filename=None):
     # imputed is NxP 
     # true is NxP
     
@@ -212,7 +216,12 @@ def plot_imputation_density(imputed, true, dropout_idx, title="", ymax=10, nbins
 
     plt.plot(l, l, color='black', linestyle=":")
 
-def plot_sorted_imputation_densities(model_list, X_train, ax=None, ymax=10, nbins=50, cmap="Greys", filename=None):
+    if filename is not None:
+        plt.savefig(filename, bbox_inches='tight')
+    else:
+        plt.show()
+
+def plot_sorted_imputation_densities(model_list, X_train, ax=None, nrows=1, ncols=None, ymax=10, nbins=50, cmap="Greys", filename=None):
     # Sort by decreasing imputation error
     names = []
     dropimp_errs = []
@@ -224,16 +233,20 @@ def plot_sorted_imputation_densities(model_list, X_train, ax=None, ymax=10, nbin
     scores = dict(zip(names, dropimp_errs))
     sorted_scores = sorted(scores.items(), key=operator.itemgetter(1), reverse=False) # lower is better
 
-    # Plot in decreasing silhouette order
+    # Plot in decreasing imputation error order
+    nresults = len(model_list)
+    nrows = nrows
+    if ncols is None:
+        ncols = nresults
     if ax is None:
         fig = plt.figure(figsize=(20, 4))
 
-    for i in range(len(model_list)):
-        ax = plt.subplot(1, len(model_list), i+1)
+    for i in range(nresults):
+        ax = plt.subplot(nrows, ncols, i+1)
         plot_imputation_density(est_Rs[names.index(sorted_scores[i][0])], 
             X_train, model_list[i].dropout_idx, ymax=ymax, ax=ax, title=sorted_scores[i][0], nbins=nbins, cmap=cmap)
 
     if filename is not None:
-        plt.savefig(filename)
+        plt.savefig(filename, bbox_inches='tight')
     else:
         plt.show()

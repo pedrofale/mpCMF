@@ -1,13 +1,13 @@
 import operator
 
-def print_model_lls(model_list, mode='Train', filename=None):
+def print_model_lls(model_list, mode='Train', filename=None, filemode='w'):
 	""" Print ordered train or test log-likelihoods.
 	"""
 	assert mode in ['Train', 'Test']
 
 	f = None
 	if filename is not None:
-		f = open(filename, 'w')
+		f = open(filename, filemode)
 
 	names = []
 	lls = []
@@ -16,8 +16,8 @@ def print_model_lls(model_list, mode='Train', filename=None):
 		if mode=='Train':
 			lls.append(model.train_ll)
 		elif mode=='Test':
-			lls.append(model.test_ll)
 			assert model.test_ll is not None
+			lls.append(model.test_ll)
 
 	scores = dict(zip(names, lls))
 
@@ -31,12 +31,12 @@ def print_model_lls(model_list, mode='Train', filename=None):
 	if f is not None:
 		f.close()
 
-def print_model_silhouettes(model_list, filename=None):
+def print_model_silhouettes(model_list, filename=None, filemode='w'):
 	""" Print ordered silhouette scores.
 	"""
 	f = None
 	if filename is not None:
-		f = open(filename, 'w')
+		f = open(filename, filemode)
 
 	names = []
 	silhs = []
@@ -57,12 +57,12 @@ def print_model_silhouettes(model_list, filename=None):
 		f.close()
 
 
-def print_model_silhouettes(model_list, filename=None):
+def print_model_silhouettes(model_list, filename=None, filemode='w'):
 	""" Print ordered silhouette scores.
 	"""
 	f = None
 	if filename is not None:
-		f = open(filename, 'w')
+		f = open(filename, filemode)
 
 	names = []
 	silhs = []
@@ -82,10 +82,10 @@ def print_model_silhouettes(model_list, filename=None):
 	if f is not None:
 		f.close()
 
-def print_model_dropid_acc(model_list, filename=None):
+def print_model_dropid_acc(model_list, filename=None, filemode='w'):
 	f = None
 	if filename is not None:
-		f = open(filename, 'w')
+		f = open(filename, filemode)
 
 	names = []
 	dropid_accs = []
@@ -105,10 +105,10 @@ def print_model_dropid_acc(model_list, filename=None):
 	if f is not None:
 		f.close()
 
-def print_model_dropimp_err(model_list, filename=None):
+def print_model_dropimp_err(model_list, filename=None, filemode='w'):
 	f = None
 	if filename is not None:
-		f = open(filename, 'w')
+		f = open(filename, filemode)
 
 	names = []
 	dropimp_errs= []
