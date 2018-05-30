@@ -1,0 +1,12 @@
+Experiment parameters:
+T: 0h0m6s
+S: 1
+max_iter: 1000000
+K: 10
+
+Train data log-likelihood:
+[1m- SVI-EB-1: 12.3226[0m
+Silhouette scores:
+[1m- PCA: 0.21103[0m
+- SVI-EB-1: -0.0140541
+Script finished. Time elapsed: 0h1m55s.

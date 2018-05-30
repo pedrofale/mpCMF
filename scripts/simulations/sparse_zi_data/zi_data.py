@@ -127,8 +127,8 @@ def main():
 
 				print('Calculating train data log-likelihood...')
 				# Calculate train data log-likelihood
-				gap_dll = utils.log_likelihood(Y_train, gap_U, gap_V, infgap.p_D, gap_S, clip=infgap.clip_ll))
-				zigap_dll = utils.log_likelihood(Y_train, zigap_U, zigap_V, infzigap.p_D, zigap_S, clip=infzigap.clip_ll))
+				gap_dll = utils.log_likelihood(Y_train, gap_U, gap_V, infgap.p_D, gap_S)
+				zigap_dll = utils.log_likelihood(Y_train, zigap_U, zigap_V, infzigap.p_D, zigap_S)
 				print('Done.\n')
 
 				# Store dlls in array

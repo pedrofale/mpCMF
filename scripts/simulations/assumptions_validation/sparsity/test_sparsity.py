@@ -8,6 +8,14 @@ We evaluate the latent space silhouette, the held-out log-likelihood and the imp
 from pCMF.misc import utils
 from pCMF.models.pcmf.inferences import cavi_new
 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from matplotlib.pyplot import cm
+
+import seaborn as sns
+sns.set_style('whitegrid')
+
 import numpy as np
 from sklearn.decomposition import PCA, SparsePCA
 from sklearn.metrics import silhouette_score, accuracy_score
@@ -170,33 +178,52 @@ def main():
 				holl_zigap_scores[i, j, k] = zigap_holl
 				holl_szigap_scores[i, j, k] = szigap_holl
 
-				if i > 0:
-					# Zero-Inflated data
-					print('Calculating dropout identification accuracy...')
-					# Calculate dropout identification accuracy
-					dropout_idx = np.where(D_train == 0)
-					zigap_acc = accuracy_score(zigap_D.flatten(), D_train.flatten())
-					szigap_acc = accuracy_score(szigap_D.flatten(), D_train.flatten())
-					print('Done.\n')
+				print('Calculating dropout identification accuracy...')
+				# Calculate dropout identification accuracy
+				dropout_idx = np.where(D_train == 0)
+				zigap_acc = accuracy_score(zigap_D.flatten(), D_train.flatten())
+				szigap_acc = accuracy_score(szigap_D.flatten(), D_train.flatten())
+				print('Done.\n')
 
-					# Store dropid in array
-					dropid_zigap_scores[i-1, j, k] = zigap_acc
-					dropid_szigap_scores[i-1, j, k] = szigap_acc
+				# Store dropid in array
+				dropid_zigap_scores[i-1, j, k] = zigap_acc
+				dropid_szigap_scores[i-1, j, k] = szigap_acc
 
-					print('Calculating dropout imputation error...')
-					# Calculate dropout imputation error
-					gap_R = np.dot(gap_U, gap_V.T)
-					zigap_R = np.dot(zigap_U, zigap_V.T)
-					szigap_R = np.dot(szigap_U, zigap_V.T)
-					gap_err = utils.imputation_error(X_train, gap_R, dropout_idx)
-					zigap_err = utils.imputation_error(X_train, zigap_R, dropout_idx)
-					szigap_err = utils.imputation_error(X_train, szigap_R, dropout_idx)
-					print('Done.\n')
+				print('Calculating dropout imputation error...')
+				# Calculate dropout imputation error
+				gap_R = np.dot(gap_U, gap_V.T)
+				zigap_R = np.dot(zigap_U, zigap_V.T)
+				szigap_R = np.dot(szigap_U, zigap_V.T)
+				gap_err = utils.imputation_error(X_train, gap_R, dropout_idx)
+				zigap_err = utils.imputation_error(X_train, zigap_R, dropout_idx)
+				szigap_err = utils.imputation_error(X_train, szigap_R, dropout_idx)
+				print('Done.\n')
 
-					# Store dropimp in array
-					dropimp_gap_scores[i-1, j, k] = gap_err
-					dropimp_zigap_scores[i-1, j, k] = zigap_err
-					dropimp_zigap_scores[i-1, j, k] = szigap_err
+				# Store dropimp in array
+				dropimp_gap_scores[i-1, j, k] = gap_err
+				dropimp_zigap_scores[i-1, j, k] = zigap_err
+				dropimp_zigap_scores[i-1, j, k] = szigap_err
+
+				if i == 0 and j == 0 and k == 0:
+					# Store the convergence curves from the first iteration
+					fig = plt.figure(figsize=(12, 4))
+					ax = plt.subplot(1, 2, 1)
+					ax.plot(infgap.ll_time, label='GaP-EB')
+					ax.plot(infzigap.ll_time, label='ZIGaP-EB')
+					ax.plot(infszigap.ll_time, label='SZIGaP-EB')
+					plt.ylabel('Average log-likelihood')
+					plt.xlabel('Seconds(*{0})'.format(S))
+					ax = plt.subplot(1, 2, 2)
+					ax.plot(infgap.ll_time, label='GaP-EB')
+					ax.plot(infzigap.ll_time, label='ZIGaP-EB')
+					ax.plot(infszigap.ll_time, label='SZIGaP-EB')
+					plt.ylabel('Silhouette of latent space')
+					plt.xlabel('Seconds(*{0})'.format(S))
+					plt.legend(loc='upper left', bbox_to_anchor=[1., 1.], frameon=True)
+					plt.suptitle('Data set with N={} and P={}'.format(N, P), fontsize=14)
+					plt.subplots_adjust(top=0.85)
+					plt.savefig('{0}/convergence.png'.format(newpath), bbox_inches='tight')
+					print('Saved convergence curves of first iteration to {0}/convergence.png'.format(newpath))
 
 	print('Saving results to {0}...'.format(newpath))
 
