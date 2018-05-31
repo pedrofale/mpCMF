@@ -1,5 +1,5 @@
 """ This file contains an abstract class for inference of the parameters of the variational
-distributions that approximate the posteriors of the Probabilistic Count Matrix Factorization
+distributions that approximate the posteriors of the Hierarchical Probabilistic Count Matrix Factorization
 model.
 """
 
@@ -12,24 +12,25 @@ from pCMF.misc.utils import log_likelihood
 from abc import ABC, abstractmethod
 
 class KLqp(ABC):
-	def __init__(self, X, alpha, beta, pi_D=None, pi_S=None, empirical_bayes=False):
+	def __init__(self, X, alpha, beta, pi=None):
 		self.X = X
 		self.N = X.shape[0] # no of observations
 		self.P = X.shape[1] # no of genes
 		self.K = alpha.shape[1] # latent space dim
 
 		self.zi = pi_D is not None
-		self.sparse = pi_S is not None
 
 		# If counts are big, clip the log-likelihood to avoid inf values
 		self.clip_ll = np.any(np.isinf(factorial(self.X)))
 
-		# Empirical Bayes estimation of hyperparameters
-		self.empirical_bayes = empirical_bayes
+		## Hyperparameters
+		self.a_ = 0.3 * np.ones((self.N))
+		self.b_ = 1. * np.ones((self.N))
+		self.c_ = 0.3 * np.ones((self.P))
+		self.d_ = 1. * np.ones((self.P))
 
-		## Hyperparameters		
-		self.alpha = np.expand_dims(alpha, axis=1).repeat(self.N, axis=1) # 2xNxK
-		self.beta = beta # 2xPxK
+		self.alpha = 0.3 * np.ones((self.N, self.K)) # a
+		self.beta = 0.3 * np.ones((self.P, self.K)) # c
 		
 		# zero-Inflation
 		if self.zi:
@@ -48,20 +49,19 @@ class KLqp(ABC):
 			self.pi_S =  np.ones((self.P, self.K)) # PxK
 
 		## Variational parameters
-		self.a = np.ones((2, self.N, self.K)) + np.random.rand(2, self.N, self.K) # parameters of q(U)
+		self.a = np.ones((2, self.N, self.K)) + np.random.rand(2, self.N, self.K)# parameters of q(U)
 		self.b = np.ones((2, self.P, self.K)) + np.random.rand(2, self.P, self.K) # parameters of q(V)
-		self.r = np.random.dirichlet([1 / self.K] * self.K, size=(self.N, self.P,)) # parameters of q(Z)
-		#self.r = np.ones((self.N, self.P, self.K)) * 0.5 # parameters of q(Z)
-		
-		# zero-inflation
-		self.p_D = np.ones((self.N, self.P)) # parameters of q(D)
-		if self.zi:
-			 self.p_D = self.p_D * 0.5
+		self.r = np.ones((self.N, self.P, self.K)) * 0.5 # parameters of q(Z)
 
-		# sparsity
-		self.p_S = np.ones((self.P, self.K)) # parameters of q(S)
-		if self.sparse:
-			 self.p_S = self.p_S * 0.9
+		self.k = np.ones((2, self.N)) # parameters of q(psi)
+		self.k[0] = self.a_ + self.K * self.alpha[:, 0]
+		self.t = np.ones((2, self.P)) # parameters of q(mu)
+		self.t[0] = self.c_ + self.K * self.beta[:, 0]
+
+		# zero-inflation
+		self.p = np.ones((self.N, self.P)) # parameters of q(D)
+		if self.zi:
+			 self.p = self.p * 0.5
 
 		# Log-likelihood per iteration and per time unit
 		self.ll_it = []
@@ -81,11 +81,6 @@ class KLqp(ABC):
 		D = np.zeros((self.N, self.P))
 		D[p_D > thres] = 1.
 		return D
-
-	def estimate_S(self, p_S, thres=0.5):
-		S = np.zeros((self.P, self.K))
-		S[p_S > thres] = 1.
-		return S
 
 	def predictive_ll(self, X_test, n_iterations=10, S=100):
 		""" Computes the average posterior predictive likelihood of data not used for 
@@ -115,9 +110,8 @@ class KLqp(ABC):
 
 		est_U = self.estimate_U(a)
 		est_V = self.estimate_V(self.b)
-		est_S = self.estimate_S(self.p_S)
 
-		pred_ll = log_likelihood(X_test, est_U, est_V, p_D, est_S, clip=self.clip_ll) # S
+		pred_ll = log_likelihood(X_test, est_U, est_V, p_D, clip=self.clip_ll)
 		pred_ll = np.mean(pred_ll)
 			
 		return pred_ll
@@ -125,10 +119,6 @@ class KLqp(ABC):
 	def generate_from_posterior(return_all=False):
 		U = utils.sample_gamma(self.a[0], self.a[1])
 		V = utils.sample_gamma(self.b[0], self.b[1])
-
-		if self.sparse:
-			est_S = self.estimate_S(self.p_S)
-			V = V * est_S
 
 		R = np.matmul(U.T, V)
 		X = np.random.poisson(R)
@@ -167,7 +157,7 @@ class KLqp(ABC):
 				est_V = self.estimate_V(self.b)
 				est_S = self.estimate_S(self.p_S)
 
-				ll_curr = log_likelihood(self.X[idx], est_U, est_V, self.p_D[idx], est_S, clip=self.clip_ll)
+				ll_curr = log_likelihood(self.X[idx], est_U, est_V, self.p_D[idx], clip=self.clip_ll)
 				self.ll_it.append(ll_curr)
 			
 			if calc_silh:
