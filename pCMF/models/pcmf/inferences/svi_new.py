@@ -34,13 +34,8 @@ class StochasticVI(KLqp):
 
 		for i in iterator:
 			for k in range(self.K):
-				total1 = 0.
-				total2 = 0.
-				for j in range(self.P):
-					total1 = total1 + p_D[i, j] * self.p_S[j, k] * X[i, j] * r[i, j, k]
-					total2 = total2 + p_D[i, j] * self.p_S[j, k] * self.b[0, j, k] / self.b[1, j, k]
-				a[0, i, k] = self.alpha[0, i, k] + total1
-				a[1, i, k] = self.alpha[1, i, k] + total2
+				a[0, i, k] = self.alpha[0, i, k] + np.sum(p_D[i, :] * self.p_S[:, k] * X[i, :] * r[i, :, k])
+				a[1, i, k] = self.alpha[1, i, k] + np.sum(p_D[i, :] * self.p_S[:, k] * self.b[0, :, k] / self.b[1, :, k])
 
 		return a
 

@@ -21,42 +21,16 @@ class CoordinateAscentVI(KLqp):
 
 		for i in range(N):
 			for k in range(self.K):
-				total1 = 0.
-				total2 = 0.
-				for j in range(self.P):
-					total1 = total1 + p_D[i, j] * self.p_S[j, k] * X[i, j] * r[i, j, k]
-					total2 = total2 + p_D[i, j] * self.p_S[j, k] * self.b[0, j, k] / self.b[1, j, k]
-				a[0, i, k] = self.alpha[0, i, k] + total1
-				a[1, i, k] = self.alpha[1, i, k] + total2
+				a[0, i, k] = self.alpha[0, i, k] + np.sum(p_D[i, :] * self.p_S[:, k] * X[i, :] * r[i, :, k])
+				a[1, i, k] = self.alpha[1, i, k] + np.sum(p_D[i, :] * self.p_S[:, k] * self.b[0, :, k] / self.b[1, :, k])
 
 		return a
-
-		#for j in range(self.P):
-		#	total = total + np.expand_dims(self.p[:, j], 1) * np.matmul(np.expand_dims(self.X[:, j], 1).T, self.r[:, j, :])
-		#self.a[0] = self.alpha[0] + total
-
-		#self.a[1] = self.alpha[1] + np.matmul(self.p, self.b[0]/self.b[1])
 
 	def update_b(self):
 		for j in range(self.P):
 			for k in range(self.K):
-				total1 = 0.
-				total2 = 0.
-				for i in range(self.N):
-					total1 = total1 + self.p_D[i, j] * self.X[i, j] * self.r[i, j, k]
-					total2 = total2 + self.p_D[i, j] * self.a[0, i, k] / self.a[1, i, k]
-				self.b[0, j, k] = self.beta[0, j, k] + self.p_S[j, k] * total1
-				self.b[1, j, k] = self.beta[1, j, k] + self.p_S[j, k] * total2
-		#total = 0.
-		#for j in range(self.P):
-		#	for k in range(self.K):
-		#		for i in range(self.N):
-		#			total = total + p[i, j] * X[i, j] * r[i, j, k]
-		#for i in range(self.N):
-		#	total = total + np.expand_dims(self.p[i, :], 1) * np.matmul(np.expand_dims(self.X[i, :], 1).T, self.r[i, :, :])
-		#self.b[0] = self.beta[0] + total
-
-		#self.b[1] = self.beta[1] + np.matmul(self.p.T, self.a[0]/self.a[1])
+				self.b[0, j, k] = self.beta[0, j, k] + self.p_S[j, k] * np.sum(self.p_D[:, j] * self.X[:, j] * self.r[:, j, k])
+				self.b[1, j, k] = self.beta[0, j, k] + self.p_S[j, k] * np.sum(self.p_D[:, j] * self.a[0, :, k] / self.a[1, :, k])
 
 	def update_p_D(self, p_D, X, a, r):
 		N = X.shape[0]
