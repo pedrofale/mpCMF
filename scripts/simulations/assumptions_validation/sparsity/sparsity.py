@@ -115,7 +115,7 @@ def main(args):
 				model_list = [gap, zigap, szigap]
 
 				for model in model_list:
-					model.run(max_iter=max_iter, max_time=T, sampling_rate=S, verbose=True)
+					model.run(max_iter=max_iter, max_time=T, sampling_rate=S, verbose=True, calc_silh=False, calc_ll=False)
 				print('Done.\n')
 
 				# Store silhs in array
@@ -143,19 +143,43 @@ def main(args):
 				dropimp_zigap_scores[i, j, k] = zigap.dropimp_err
 				dropimp_zigap_scores[i, j, k] = szigap.dropimp_err
 
-				if i == 0 and j == 0 and k == 0:
-					# Store the convergence curves from the first iteration
-					print('Saving convergence curves to {0}/{1}...'.format(newpath, convergence_filename))
-					fig = plt.figure(figsize=(12, 4))
-					ax = plt.subplot(1, 2, 1)
-					plot_utils.plot_model_convergence(model_list, mode='ll_it', ax=ax, ylabel='Average log-likelihood', xlabel='Seconds(*{0})'.format(S))
-					ax = plt.subplot(1, 2, 2)
-					plot_utils.plot_model_convergence(model_list, mode='silh_it', ax=ax, ylabel='Silhouette of latent space', xlabel='Seconds(*{0})'.format(S))
-					plt.legend(loc='upper left', bbox_to_anchor=[1., 1.], frameon=True)
-					plt.suptitle('Data set with N={} and P={}'.format(N, P), fontsize=14)
-					plt.subplots_adjust(top=0.85)
-					plt.savefig('{0}/{1}'.format(newpath, convergence_filename), bbox_inches='tight')
-					print('Done.\n')
+				# if i == 0 and j == 0 and k == 0:
+				# 	# Store the convergence curves from the first iteration
+				# 	print('Saving convergence curves to {0}/{1}...'.format(newpath, convergence_filename))
+				# 	fig = plt.figure(figsize=(12, 4))
+				# 	ax = plt.subplot(1, 2, 1)
+				# 	plot_utils.plot_model_convergence(model_list, mode='ll_it', ax=ax, ylabel='Average log-likelihood', xlabel='Seconds(*{0})'.format(S))
+				# 	ax = plt.subplot(1, 2, 2)
+				# 	plot_utils.plot_model_convergence(model_list, mode='silh_it', ax=ax, ylabel='Silhouette of latent space', xlabel='Seconds(*{0})'.format(S))
+				# 	plt.legend(loc='upper left', bbox_to_anchor=[1., 1.], frameon=True)
+				# 	plt.suptitle('Data set with N={} and P={}'.format(N, P), fontsize=14)
+				# 	plt.subplots_adjust(top=0.85)
+				# 	plt.savefig('{0}/{1}'.format(newpath, convergence_filename), bbox_inches='tight')
+				# 	print('Done.\n')
+
+	print('Saving results to {0}...'.format(newpath))
+
+	np.save('{0}/silh_pca_scores.npy'.format(newpath), silh_pca_scores)
+	np.save('{0}/silh_gap_scores.npy'.format(newpath), silh_gap_scores)
+	np.save('{0}/silh_zigap_scores.npy'.format(newpath), silh_zigap_scores)
+	np.save('{0}/silh_szigap_scores.npy'.format(newpath), silh_szigap_scores)
+
+	np.save('{0}/dll_gap_scores.npy'.format(newpath), dll_gap_scores)
+	np.save('{0}/dll_zigap_scores.npy'.format(newpath), dll_zigap_scores)
+	np.save('{0}/dll_szigap_scores.npy'.format(newpath), dll_szigap_scores)
+
+	np.save('{0}/holl_gap_scores.npy'.format(newpath), holl_gap_scores)
+	np.save('{0}/holl_zigap_scores.npy'.format(newpath), holl_zigap_scores)
+	np.save('{0}/holl_szigap_scores.npy'.format(newpath), holl_szigap_scores)
+
+	np.save('{0}/dropid_zigap_scores.npy'.format(newpath), dropid_zigap_scores)
+	np.save('{0}/dropid_szigap_scores.npy'.format(newpath), dropid_szigap_scores)
+
+	np.save('{0}/dropimp_gap_scores.npy'.format(newpath), dropimp_gap_scores)
+	np.save('{0}/dropimp_zigap_scores.npy'.format(newpath), dropimp_zigap_scores)
+	np.save('{0}/dropimp_szigap_scores.npy'.format(newpath), dropimp_szigap_scores)
+
+	print('Done.\n')
 
 	# Finish script
 	elapsed_sec = time.time() - init

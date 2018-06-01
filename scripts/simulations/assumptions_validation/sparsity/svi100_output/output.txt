@@ -1,0 +1,9 @@
+Experiment parameters:
+N: 1000
+P: 1000
+K: 10
+T: 4h0m0s
+S: 30.0
+max_iter: 1000000
+z_p: 0.5
+
