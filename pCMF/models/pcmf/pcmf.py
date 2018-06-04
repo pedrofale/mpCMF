@@ -6,23 +6,25 @@ from sklearn.manifold import TSNE
 from sklearn.metrics import silhouette_score, accuracy_score
 
 class PCMF(object):
-	def __init__(self, X_train, c_train, D_train=None, X_test=None, c_test=None, n_components=10, empirical_bayes=True, 
+	def __init__(self, Y_train, c_train, D_train=None, X_train=None, Y_test=None, c_test=None, n_components=10, empirical_bayes=True, 
 					minibatch_size=None, alpha=None, beta=None, pi_D=None, pi_S=None, zero_inflation=True, sparsity=True, name=None):
-		self.X_train = X_train
+		self.Y_train = Y_train
 		self.c_train = c_train
 
 		self.D_train = D_train
+		self.X_train = X_train
+
 		self.dropout_idx = None
 		if D_train is not None:
 			self.dropout_idx = np.where(self.D_train == 0)
 
-		self.X_test = X_test
+		self.Y_test = Y_test
 		self.c_test = c_test
 
-		if X_test is not None:
-			assert X_train.shape[1] == X_test.shape[1]
+		if Y_test is not None:
+			assert Y_train.shape[1] == Y_test.shape[1]
 
-		self.P = X_train.shape[1]
+		self.P = Y_train.shape[1]
 
 		self.minibatch_size = minibatch_size
 		self.empirical_bayes = empirical_bayes
@@ -73,9 +75,9 @@ class PCMF(object):
 		self.inf = None
 		print("{}:".format(self.name))
 		if minibatch_size is None:
-			self.inf = cavi_new.CoordinateAscentVI(X_train, self.alpha, self.beta, pi_D=self.pi_D, pi_S=self.pi_S, empirical_bayes=empirical_bayes)
+			self.inf = cavi_new.CoordinateAscentVI(Y_train, self.alpha, self.beta, pi_D=self.pi_D, pi_S=self.pi_S, empirical_bayes=empirical_bayes)
 		else:
-			self.inf = svi_new.StochasticVI(X_train, self.alpha, self.beta, pi_D=self.pi_D, pi_S=self.pi_S, minibatch_size=minibatch_size, empirical_bayes=empirical_bayes)
+			self.inf = svi_new.StochasticVI(Y_train, self.alpha, self.beta, pi_D=self.pi_D, pi_S=self.pi_S, minibatch_size=minibatch_size, empirical_bayes=empirical_bayes)
 
 	def run(self, max_iter=1, sampling_rate=1, max_time=60, calc_ll=True, calc_silh=True, do_tsne=True, do_dll=True, do_holl=True, do_silh=True, do_imp=True, verbose=False):
 		if verbose:
@@ -92,11 +94,11 @@ class PCMF(object):
 			self.proj_2d = TSNE(n_components=2).fit_transform(self.est_U)
 
 		if do_dll:
-			self.train_ll = utils.log_likelihood(self.X_train, self.est_U, self.est_V, self.inf.p_D, self.est_S, clip=self.inf.clip_ll)
+			self.train_ll = utils.log_likelihood(self.Y_train, self.est_U, self.est_V, self.inf.p_D, self.est_S, clip=self.inf.clip_ll)
 		
 		if do_holl:
-			if self.X_test is not None:
-				self.test_ll = self.inf.predictive_ll(self.X_test)
+			if self.Y_test is not None:
+				self.test_ll = self.inf.predictive_ll(self.Y_test)
 
 		if do_silh:
 			self.silhouette = silhouette_score(self.est_U, self.c_train)
@@ -104,7 +106,11 @@ class PCMF(object):
 		if do_imp:
 			if self.D_train is not None:
 				self.dropid_acc = accuracy_score(self.est_D.flatten(), self.D_train.flatten())
-				self.dropimp_err = utils.imputation_error(self.X_train, self.est_R, self.dropout_idx)
+				if self.X_train is not None:
+					self.dropimp_err = utils.imputation_error(self.X_train, self.est_R, self.dropout_idx)
+
+		if verbose:
+			print('Done.')
 
 	def sample_posterior(return_all=False):
 		U = utils.sample_gamma(self.inf.a[0], self.inf.a[1])

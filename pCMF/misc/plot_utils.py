@@ -150,7 +150,6 @@ def plot_sorted_tsnes(model_list, clusters, labels=None, ax=None, nrows=1, ncols
     
     # Plot in decreasing silhouette order
     nresults = len(model_list)
-    nrows = nrows
     if ncols is None:
         ncols = nresults
 
@@ -169,12 +168,12 @@ def plot_sorted_tsnes(model_list, clusters, labels=None, ax=None, nrows=1, ncols
     else:
         plt.show()
 
-def plot_imputation_density(imputed, true, dropout_idx, title="", ymax=10, nbins=50, ax=None, cmap="Greys", filename=None):
+def plot_imputation_density(imputed, true, dropout_idx, title="", ymax=10, nbins=50, ax=None, cmap="Greys", filename=None, show=True):
     # imputed is NxP 
     # true is NxP
     
     # We only care about the entries affected by dropouts
-    x, y = imputed[dropout_idx], true[dropout_idx]
+    y, x = imputed[dropout_idx], true[dropout_idx]
     
     # let's only look at the values that are lower than ymax
     mask = x < ymax
@@ -194,31 +193,31 @@ def plot_imputation_density(imputed, true, dropout_idx, title="", ymax=10, nbins
 
     if ax is None:
         plt.figure(figsize=(5, 5))
-    
-    axes = plt.gca()
-    axes.set_xlim([0, ymax])
-    axes.set_ylim([0, ymax])
+        ax = plt.gca()
+
+    ax.set_xlim([0, ymax])
+    ax.set_ylim([0, ymax])
 
     # Evaluate a gaussian kde on a regular grid of nbins x nbins over data extents
     k = kde.gaussian_kde(data)
     xi, yi = np.mgrid[0:ymax:nbins*1j, 0:ymax:nbins*1j]
     zi = k(np.vstack([xi.flatten(), yi.flatten()]))
 
+    ax.pcolormesh(yi, xi, zi.reshape(xi.shape), cmap=cmap)
+
+    a, _, _, _ = np.linalg.lstsq(y[:,np.newaxis], x, rcond=None)
+    l = np.linspace(0, ymax)
+    ax.plot(l, a * l, color='black')
+
+    ax.plot(l, l, color='black', linestyle=":")
+
     plt.title(title, fontsize=12)
     plt.ylabel("Imputed counts")
     plt.xlabel('Original counts')
 
-    plt.pcolormesh(yi, xi, zi.reshape(xi.shape), cmap=cmap)
-
-    a, _, _, _ = np.linalg.lstsq(y[:,np.newaxis], x, rcond=None)
-    l = np.linspace(0, ymax)
-    plt.plot(l, a * l, color='black')
-
-    plt.plot(l, l, color='black', linestyle=":")
-
     if filename is not None:
         plt.savefig(filename, bbox_inches='tight')
-    else:
+    elif show:
         plt.show()
 
 def plot_sorted_imputation_densities(model_list, X_train, ax=None, nrows=1, ncols=None, ymax=10, nbins=50, cmap="Greys", filename=None):
@@ -235,16 +234,16 @@ def plot_sorted_imputation_densities(model_list, X_train, ax=None, nrows=1, ncol
 
     # Plot in decreasing imputation error order
     nresults = len(model_list)
-    nrows = nrows
     if ncols is None:
         ncols = nresults
+
     if ax is None:
         fig = plt.figure(figsize=(20, 4))
 
     for i in range(nresults):
         ax = plt.subplot(nrows, ncols, i+1)
         plot_imputation_density(est_Rs[names.index(sorted_scores[i][0])], 
-            X_train, model_list[i].dropout_idx, ymax=ymax, ax=ax, title=sorted_scores[i][0], nbins=nbins, cmap=cmap)
+            X_train, model_list[i].dropout_idx, ymax=ymax, ax=ax, title=sorted_scores[i][0], nbins=nbins, cmap=cmap, show=False)
 
     if filename is not None:
         plt.savefig(filename, bbox_inches='tight')
