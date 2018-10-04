@@ -1,2 +1,1 @@
-from pCMF.models import pcmf
-from pCMF.models import hpcmf
+from pCMF.models.mpcmf import *

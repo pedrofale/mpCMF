@@ -1,9 +1,9 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="SVIpCMF",
+    name="mpCMF",
     version="0.1",
-    author="Pedro Ferreira",
-    description="Probabilistic Count Matrix Factorization using stochastic variational inference.",
+    author="Pedro F. Ferreira",
+    description="Package for modified pCMF.",
     packages=find_packages(),
 )
