@@ -17,22 +17,22 @@ class CoordinateAscentVI(KLqp):
 		super().__init__(*args, **kwargs)
 
 	def update_n(self, n, X, a, p_D, r):
-		n[0] = self.nu[0] + np.einsum('ij,ijk->i', p_D * X, r)
-		n[1] = self.nu[1] + np.einsum('ij,ik,jk->i', p_D, a[0]/a[1], self.b[0]/self.b[1])
+		n[0] = self.nu[0, 0] + np.einsum('ij,ijk->i', p_D * X, r)
+		n[1] = self.nu[1, 0] + np.einsum('ij,ik,jk->i', p_D, a[0]/a[1], self.b[0]/self.b[1])
 
 		return np.copy(n)
 
 	def update_a(self, a, X, p_D, r, n):
 		Lmean = (n[0]/n[1])[:, np.newaxis]
-		a[0] = self.alpha[0] + np.einsum('ij,ijk->ik', p_D * X, r)
-		a[1] = self.alpha[1] + Lmean * np.einsum('ij,jk->ik', p_D, self.b[0]/self.b[1])
+		a[0] = self.alpha[0, 0, :] + np.einsum('ij,ijk->ik', p_D * X, r)
+		a[1] = self.alpha[1, 0, :] + Lmean * np.einsum('ij,jk->ik', p_D, self.b[0]/self.b[1])
 
 		return np.copy(a)
 
 	def update_b(self):
 		Lmean = (self.n[0]/self.n[1])[:, np.newaxis]
-		self.b[0] = self.beta[0] + np.einsum('ij,ijk->jk', self.p_D * self.X, self.r)
-		self.b[1] = self.beta[1] + np.einsum('ij,ik->jk', Lmean * self.p_D, self.a[0]/self.a[1])
+		self.b[0] = self.beta[0, 0, :] + np.einsum('ij,ijk->jk', self.p_D * self.X, self.r)
+		self.b[1] = self.beta[1, 0, :] + np.einsum('ij,ik->jk', Lmean * self.p_D, self.a[0]/self.a[1])
 
 	def update_p_D(self, p_D, X, a, r, n):
 		logit_p_D = np.zeros((X.shape[0], self.P))
@@ -166,6 +166,7 @@ class CoordinateAscentVI(KLqp):
 	def update_parameters(self, *args):
 		self.r = self.update_r(self.r, self.X, self.a, self.p_D, self.n)
 
+		assert np.all(self.r != 0)
 		# update the local variables
 		self.a = self.update_a(self.a, self.X, self.p_D, self.r, self.n)
 

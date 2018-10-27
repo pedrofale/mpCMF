@@ -96,8 +96,6 @@ class StochasticVI(KLqp):
 		else:
 			idx = mb_idx
 
-		S = self.estimate_S(self.p_S)
-
 		nr = digamma(n[0]) - np.log(n[1]) # N
 		nr = nr[:, np.newaxis]
 		ar = digamma(a[0]) - np.log(a[1]) # NxK
@@ -110,8 +108,7 @@ class StochasticVI(KLqp):
 		# 		else:
 		# 			aux = S[j, :] * np.exp(ar[i, :] + br[j, :])
 		# 			r[i, j, :] = aux / np.sum(aux)
-		r[idx, :, :] = np.einsum('ik,jk->ijk', np.exp(ar[idx, :]), np.exp(br))
-
+		r[idx, :, :] = np.einsum('ik,jk->ijk', np.exp(ar[idx, :]), np.exp(br)) + 1e-7
 		r = r / (np.sum(r, axis=2)[:, :, np.newaxis]) # + 1 prevents value error
 		return r
 
@@ -202,14 +199,16 @@ class StochasticVI(KLqp):
 		mb_idx = np.random.randint(self.N, size=self.minibatch_size)
 		# mb_idx = np.random.choice(self.N, size=self.minibatch_size, replace=False)
 
+		self.r = self.update_r(self.r, self.X, self.a, self.p_D, self.n, mb_idx=mb_idx)
+
+		assert np.all(self.r != 0)
 		# update the local variables
-		for i in range(5):
+		for i in range(1):
 			self.a = self.update_a(self.a, self.X, self.p_D, self.r, self.n, mb_idx=mb_idx)
 			if self.zi:
 				self.p_D = self.update_p_D(self.p_D, self.X, self.a, self.r, self.n, mb_idx=mb_idx)
 			if self.scaling:
 				self.n = self.update_n(self.n, self.X, self.a, self.p_D, self.r, mb_idx=mb_idx)
-			self.r = self.update_r(self.r, self.X, self.a, self.p_D, self.n, mb_idx=mb_idx)
 		
 		# update global variables
 		step_size = (it+1. + self.delay)**(-self.forget_rate)

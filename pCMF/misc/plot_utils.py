@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import kde
 import operator
+from collections import OrderedDict
 
 def setBoxColors(bp, colors):
     n_boxes = len(bp['boxes'])
@@ -48,7 +49,7 @@ def plot_simulation_results(low_sep, high_sep, ax=None, legend=None, title=None,
             handles.append(h)
         
         if show_legend:
-            plt.legend(handles, legend)
+            plt.legend(handles, legend, frameon=True)
             _ = [h.set_visible(False) for h in handles]
     
     # set axes limits and labels
@@ -70,6 +71,33 @@ def plot_simulation_results(low_sep, high_sep, ax=None, legend=None, title=None,
     
     return ax    
 
+def plot_boxplot(results_list, names_list, ylabel=None, title=None, filename=None, ax=None):
+    # run_results contains a list of 1D arrays with the results to plot. Each element
+    # in the list is a box. 
+
+    n_boxes = len(results_list)
+
+    if ax is None:
+        fig = plt.figure()
+        ax = plt.axes()
+
+    # first boxplot pair
+    bp1_pos = range(1, n_boxes + 1)
+    bp1 = plt.boxplot(results_list, positions = bp1_pos)
+
+    ax.set_xticklabels(names_list)
+
+    if ylabel is not None:
+        plt.ylabel(ylabel)
+    
+    if title is not None:
+        plt.title(title)
+    
+    if filename is not None:
+        plt.savefig(filename, bbox_inches='tight')
+    else:
+        plt.show()
+
 def plot_convergence_curves(curve_list, label_list=None, ax=None, legend=None, title='', xlabel='', ylabel='', filename=None):
     if ax is None:
         fig = plt.figure()
@@ -87,23 +115,25 @@ def plot_convergence_curves(curve_list, label_list=None, ax=None, legend=None, t
     plt.xlabel(xlabel)
     plt.title(title)
     if legend:
-        plt.legend()
+        plt.legend(frameon=True)
     if ax is None:
         if filename is not None:
             plt.savefig(filename, bbox_inches='tight')
         else:
             plt.show()
 
-def plot_model_convergence(model_list, mode='ll_time', ax=None, legend=None, title='', xlabel='', ylabel='', filename=None):
+def plot_model_convergence(model_list, mode='train_ll_time', ax=None, legend=None, title='', xlabel='', ylabel='', filename=None):
     """Takes a list of models as input.
     """
-    if mode not in ['ll_time', 'll_it', 'silh_time', 'silh_it']:
+    if mode not in ['train_ll_time', 'train_ll_it', 'test_ll_it', 'silh_time', 'silh_it']:
         return
 
-    if mode == 'll_time':
-        curve_list = [model.inf.ll_time for model in model_list]
-    if mode == 'll_it':
-        curve_list = [model.inf.ll_it for model in model_list]
+    if mode == 'train_ll_time':
+        curve_list = [model.inf.train_ll_time for model in model_list]
+    if mode == 'train_ll_it':
+        curve_list = [model.inf.train_ll_it for model in model_list]
+    if mode == 'test_ll_it':
+        curve_list = [model.inf.test_ll_it for model in model_list]
     if mode == 'silh_time':
         curve_list = [model.inf.silh_time for model in model_list]
     if mode == 'silh_it':
@@ -112,7 +142,7 @@ def plot_model_convergence(model_list, mode='ll_time', ax=None, legend=None, tit
     plot_convergence_curves(curve_list, label_list=[model.name for model in model_list], 
         ax=ax, legend=legend, title=title, xlabel=xlabel, ylabel=ylabel, filename=filename)
 
-def plot_tsne(tsne, clusters, labels=None, ax=None, legend=None, title='', xlabel='', ylabel='', s=30, alpha=0.7, filename=None):
+def plot_tsne(tsne, clusters, labels=None, ax=None, legend=None, markers=None, title='', xlabel='', ylabel='', s=30, alpha=0.7, filename=None):
     if labels is not None:
         labels = np.array(labels)
     
@@ -129,6 +159,8 @@ def plot_tsne(tsne, clusters, labels=None, ax=None, legend=None, title='', xlabe
     if labels is not None and legend:
         ax.legend()
     
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     plt.title(title)
     if ax is None:
         if filename is not None:
@@ -136,19 +168,34 @@ def plot_tsne(tsne, clusters, labels=None, ax=None, legend=None, title='', xlabe
         else:
             plt.show()
 
-def plot_sorted_tsnes(model_list, clusters, labels=None, ax=None, nrows=1, ncols=None, legend=None, title='', s=30, alpha=0.7, bbox_to_anchor=[1., 1.], filename=None):
+def plot_sorted_tsnes(model_list, clusters, order='silh', titles=False, labels=None, ax=None, nrows=1, ncols=None, legend=None, title='', s=30, alpha=0.7, bbox_to_anchor=[1., 1.], filename=None):
+    if order is not None:
+        if order not in ['silh', 'ari', 'nmi']:
+            print('{} unrecognized.'.format(order))
+            return
+
     # Sort by decreasing silhouette
     names = []
     tsnes = []
-    silhs = []
+    scores = []
     for model in model_list:
         names.append(model.name)
         tsnes.append(model.proj_2d)
-        silhs.append(model.silhouette)
-    scores = dict(zip(names, silhs))
-    sorted_scores = sorted(scores.items(), key=operator.itemgetter(1), reverse=True)
+        if order == 'silh':
+            scores.append(model.silhouette)
+        elif order == 'ari':
+            scores.append(model.ari)
+        else:
+            scores.append(model.nmi)
+
+    if order:
+        scores = dict(zip(names, scores))
+        sorted_scores = sorted(scores.items(), key=operator.itemgetter(1), reverse=True)
+
+    else:
+        sorted_scores = list(zip(names, scores))
     
-    # Plot in decreasing silhouette order
+    # Plot in decreasing score order
     nresults = len(model_list)
     if ncols is None:
         ncols = nresults
@@ -159,7 +206,8 @@ def plot_sorted_tsnes(model_list, clusters, labels=None, ax=None, nrows=1, ncols
     for i in range(nresults):
         ax = plt.subplot(nrows, ncols, i+1)
         plot_tsne(tsnes[names.index(sorted_scores[i][0])], clusters, labels=labels, ax=ax, s=s, alpha=alpha)
-        plt.title(sorted_scores[i][0])
+        if titles:
+            plt.title(sorted_scores[i][0])
     if labels is not None and legend:
         plt.legend(bbox_to_anchor=bbox_to_anchor, frameon=True)
     
@@ -168,7 +216,7 @@ def plot_sorted_tsnes(model_list, clusters, labels=None, ax=None, nrows=1, ncols
     else:
         plt.show()
 
-def plot_imputation_density(imputed, true, dropout_idx, title="", ymax=10, nbins=50, ax=None, cmap="Greys", filename=None, show=True):
+def plot_imputation_density(imputed, true, dropout_idx, title="", ymax=10, nbins=50, ax=None, ylabel=False, cmap="Greys", filename=None, show=True):
     # imputed is NxP 
     # true is NxP
     
@@ -203,24 +251,25 @@ def plot_imputation_density(imputed, true, dropout_idx, title="", ymax=10, nbins
     xi, yi = np.mgrid[0:ymax:nbins*1j, 0:ymax:nbins*1j]
     zi = k(np.vstack([xi.flatten(), yi.flatten()]))
 
-    ax.pcolormesh(yi, xi, zi.reshape(xi.shape), cmap=cmap)
+    ax.pcolormesh(xi, yi, zi.reshape(xi.shape), cmap=cmap)
 
-    a, _, _, _ = np.linalg.lstsq(y[:,np.newaxis], x, rcond=None)
+    a, _, _, _ = np.linalg.lstsq(x[:,np.newaxis], y, rcond=None)
     l = np.linspace(0, ymax)
     ax.plot(l, a * l, color='black')
 
     ax.plot(l, l, color='black', linestyle=":")
 
     plt.title(title, fontsize=12)
-    plt.ylabel("Imputed counts")
-    plt.xlabel('Original counts')
+    if ylabel:
+        plt.ylabel("Imputed counts")
+    plt.xlabel("Original counts")
 
     if filename is not None:
         plt.savefig(filename, bbox_inches='tight')
     elif show:
         plt.show()
 
-def plot_sorted_imputation_densities(model_list, X_train, ax=None, nrows=1, ncols=None, ymax=10, nbins=50, cmap="Greys", filename=None):
+def plot_sorted_imputation_densities(model_list, X_train, order=False, ax=None, nrows=1, ncols=None, ymax=10, nbins=50, cmap="Greys", filename=None):
     # Sort by decreasing imputation error
     names = []
     dropimp_errs = []
@@ -229,8 +278,13 @@ def plot_sorted_imputation_densities(model_list, X_train, ax=None, nrows=1, ncol
         names.append(model.name)
         est_Rs.append(model.est_R)
         dropimp_errs.append(model.dropimp_err)
-    scores = dict(zip(names, dropimp_errs))
-    sorted_scores = sorted(scores.items(), key=operator.itemgetter(1), reverse=False) # lower is better
+
+    if order:
+        scores = dict(zip(names, dropimp_errs))
+        sorted_scores = sorted(scores.items(), key=operator.itemgetter(1), reverse=False) # lower is better
+
+    else:
+        sorted_scores = list(zip(names, dropimp_errs))
 
     # Plot in decreasing imputation error order
     nresults = len(model_list)
@@ -243,9 +297,430 @@ def plot_sorted_imputation_densities(model_list, X_train, ax=None, nrows=1, ncol
     for i in range(nresults):
         ax = plt.subplot(nrows, ncols, i+1)
         plot_imputation_density(est_Rs[names.index(sorted_scores[i][0])], 
-            X_train, model_list[i].dropout_idx, ymax=ymax, ax=ax, title=sorted_scores[i][0], nbins=nbins, cmap=cmap, show=False)
+            X_train, model_list[i].dropout_idx, ymax=ymax, ax=ax, title=sorted_scores[i][0], ylabel=(i==0), nbins=nbins, cmap=cmap, show=False)
 
     if filename is not None:
         plt.savefig(filename, bbox_inches='tight')
     else:
         plt.show()
+
+def get_metrics_lists(model_list):
+    """
+    example: model_list=[gap1, gap2, gap3]
+    returns: {'train_ll': [gap1.train_ll, gap2.train_ll, gap3.train_ll], 'test_ll': [gap1.test_ll, gap2.test_ll, gap3.test_ll], ...}
+    """
+    train_ll = []
+    test_ll = []
+    asw = []
+    ari = []
+    nmi = []
+
+    for model in model_list:
+        train_ll.append(model.train_ll)
+        test_ll.append(model.test_ll)
+        asw.append(model.silhouette)
+        ari.append(model.ari)
+        nmi.append(model.nmi)
+
+    metrics_lists = {'train_ll': train_ll, 'test_ll': test_ll, 'asw': asw, 'ari': ari, 'nmi': nmi}
+
+    return metrics_lists
+
+def prepare_for_barplots(model_list):
+    """
+    model_list = [m1, m2, m3]
+    returns: {asw: {'m1.name': m1.asw, 'm2.name': m2.asw, 'm3.name': m3.asw},
+                ...
+                    }
+    """
+    res = OrderedDict()
+    res['train_ll'] = {model.name: model.train_ll for model in model_list}
+    res['test_ll'] = {model.name: model.test_ll for model in model_list}
+    res['asw'] = {model.name: model.silhouette for model in model_list}
+    res['ari'] = {model.name: model.ari for model in model_list}
+    res['nmi'] = {model.name: model.nmi for model in model_list}
+    try:
+        res['basw'] = {model.name: model.batch_asw for model in model_list}
+    except:
+        pass
+
+    return res
+
+def prepare_for_boxplots(model_list_cv):
+    """
+    model_list_cv = [[m1, m1, m1], [m2, m2, m2]]
+
+    return: {'asw': {'m1.name': [m1.asw, m1.asw, m1.asw], 'm2.name': [m2.asw, m2.asw, m2.asw]},
+             'nmi': {'m1.name': [m1.nmi, m1.nmi, m1.nmi], 'm2.name': [m2.nmi, m2.nmi, m2.nmi]},
+             ...
+                }
+    """
+    res = OrderedDict()
+    res['train_ll'] = {model_list[0].name: [model.train_ll for model in model_list] for model_list in model_list_cv}
+    res['test_ll'] = {model_list[0].name: [model.test_ll for model in model_list] for model_list in model_list_cv}
+    res['asw'] = {model_list[0].name: [model.asw for model in model_list] for model_list in model_list_cv}
+    res['ari'] = {model_list[0].name: [model.ari for model in model_list] for model_list in model_list_cv}
+    res['nmi'] = {model_list[0].name: [model.nmi for model in model_list] for model_list in model_list_cv}
+    try:
+        res['basw'] = {model_list[0].name: [model.batch_asw for model in model_list] for model_list in model_list_cv}
+    except:
+        pass
+    try:
+        res['dropimp_err'] = {model_list[0].name: [model.dropimp_err for model in model_list] for model_list in model_list_cv}
+    except:
+        pass
+
+    return res
+
+def clustering_barplot(model_list, ax=None, title=None, ylabel=None,
+                            colors = ['blue', 'orange', 'green', 'red', 'yellow', 'purple'], do_legend=True, show_legend=False, ylim=None):
+
+    res = prepare_for_barplots(model_list)
+    try:
+        basw = res['basw']
+    except:
+        basw = None
+    return _clustering_barplot(res['asw'], res['ari'], res['nmi'], basw, ax=ax, title=title, ylabel=ylabel, colors=colors, do_legend=do_legend, show_legend=show_legend, ylim=ylim)
+
+def loglikelihood_barplot(model_list, ax=None, title=None, ylabel=None,
+                            colors = ['blue', 'orange', 'green', 'red', 'yellow', 'purple'], do_legend=True, show_legend=False, ylim=None):
+
+    res = prepare_for_barplots(model_list)
+    return _loglikelihood_barplot(res['train_ll'], res['test_ll'], ax=ax, title=title, ylabel=ylabel, colors=colors, do_legend=do_legend, show_legend=show_legend, ylim=ylim)
+
+
+def _clustering_barplot(asw, ari, nmi, basw=None, ax=None, title=None, ylabel=None,
+                            colors = ['blue', 'orange', 'green', 'red', 'yellow', 'purple'], do_legend=True, show_legend=False, ylim=None):
+    """
+    asw, ari and nmi are, each one, a list containing the scores for each model across all runs.
+    example: asw = {'model1':model1_score, 'model2': model2_score, 'model3': model3_score}
+    """
+    legend = asw.keys()
+    asw = list(asw.values())
+    ari = list(ari.values())
+    nmi = list(nmi.values())
+    metrics = [asw, ari, nmi]
+
+    if basw is not None:
+        basw = list(basw.values())
+        metrics = [asw, ari, nmi, basw]
+
+    n_boxes = len(asw)
+    
+    if ax is None:
+        fig = plt.figure()
+        ax = plt.axes()
+
+    init = 1
+    ticks_pos = []
+    for i in range(len(metrics)):
+        stop = init + n_boxes
+        bp_pos = range(init, stop)
+        ticks_pos.append(np.mean(bp_pos))
+
+        bp = plt.bar(bp_pos, metrics[i], color=colors)
+        
+        init = stop + 1
+
+    if do_legend is True:
+        handles = []
+        for i in range(n_boxes):
+            # draw temporary lines and use them to create a legend
+            h, = plt.plot([0,0], colors[i])
+            handles.append(h)
+
+        if show_legend:
+            plt.legend(handles, legend, frameon=True)
+            _ = [h.set_visible(False) for h in handles]
+    
+    # set axes limits and labels
+    if show_legend:
+        plt.xlim(0, stop)
+    else:
+        plt.xlim(0, stop)
+    if basw is not None:
+        ax.set_xticklabels(['ASW', 'ARI', 'NMI', 'bASW'])
+    else:
+        ax.set_xticklabels(['ASW', 'ARI', 'NMI', 'bASW'])
+    ax.set_xticks(ticks_pos)
+
+    if ylim is not None:
+        plt.ylim(ylim)
+
+    if ylabel is not None:
+        plt.ylabel(ylabel)
+    
+    if title is not None:
+        plt.title(title)
+
+    if not show_legend and do_legend:
+        return ax, handles
+    
+    return ax
+
+
+def _loglikelihood_barplot(train_ll, test_ll, ax=None, title=None, ylabel=None,
+                            colors = ['blue', 'orange', 'green', 'red', 'yellow', 'purple'], do_legend=True, show_legend=False, ylim=None):
+    """
+    asw, ari and nmi are, each one, a list containing the scores for each model across all runs.
+    example: asw = {'model1':model1_score, 'model2': model2_score, 'model3': model3_score}
+    """
+    legend = train_ll.keys()
+    train_ll = list(train_ll.values())
+    test_ll = list(test_ll.values())
+    metrics = [train_ll, test_ll]
+    ticks_pos = []
+
+    n_boxes = len(train_ll)
+    
+    if ax is None:
+        fig = plt.figure()
+        ax = plt.axes()
+
+    init = 1
+    for i in range(2):
+        stop = init + n_boxes
+        bp_pos = range(init, stop)
+        ticks_pos.append(np.mean(bp_pos))
+
+        bp = plt.bar(bp_pos, metrics[i], color=colors)
+        
+        init = stop + 1
+
+    if do_legend is True:
+        handles = []
+        for i in range(n_boxes):
+            # draw temporary lines and use them to create a legend
+            h, = plt.plot([0,0], colors[i])
+            handles.append(h)
+
+        if show_legend:
+            plt.legend(handles, legend, frameon=True)
+            _ = [h.set_visible(False) for h in handles]
+    
+    # set axes limits and labels
+    if show_legend:
+        plt.xlim(0, stop)
+    else:
+        plt.xlim(0, stop)
+    ax.set_xticklabels(['Train LL', 'Test LL'])
+    ax.set_xticks(ticks_pos)
+
+    if ylim is not None:
+        plt.ylim(ylim)
+
+    if ylabel is not None:
+        plt.ylabel(ylabel)
+    
+    if title is not None:
+        plt.title(title)
+
+    if not show_legend and do_legend:
+        return ax, handles
+    
+    return ax
+    
+def clustering_cv(model_list_cv, ax=None, title=None, ylabel=None,
+                            colors = ['blue', 'orange', 'green', 'red', 'yellow', 'purple'], do_legend=True, show_legend=False, ylim=None):
+
+    res = prepare_for_boxplots(model_list_cv)
+    return _clustering_cv(res['asw'], res['ari'], res['nmi'], ax=ax, title=title, ylabel=ylabel, colors=colors, do_legend=do_legend, show_legend=show_legend, ylim=ylim)
+
+def loglikelihood_cv(model_list_cv, ax=None, title=None, ylabel=None,
+                            colors = ['blue', 'orange', 'green', 'red', 'yellow', 'purple'], do_legend=True, show_legend=False, ylim=None):
+
+    res = prepare_for_boxplots(model_list_cv)
+    return _loglikelihood_cv(res['train_ll'], res['test_ll'], ax=ax, title=title, ylabel=ylabel, colors=colors, do_legend=do_legend, show_legend=show_legend, ylim=ylim)
+
+
+def imputationerr_boxplot(model_list, ax=None, title=None, ylabel=None,
+                            colors = ['blue', 'orange', 'green', 'red', 'yellow', 'purple'], do_legend=True, show_legend=False, ylim=None):
+    res = prepare_for_boxplots(model_list)
+    return _dropimperr_boxplot(res['dropimp_err'], ax=ax, title=title, ylabel=ylabel, colors=colors, do_legend=do_legend, show_legend=show_legend, ylim=ylim)
+
+
+def _clustering_cv(asw, ari, nmi, ax=None, title=None, ylabel=None,
+                            colors = ['blue', 'red', 'green', 'orange', 'yellow'], do_legend=True, show_legend=False, ylim=None):
+    """
+    asw, ari and nmi are, each one, a list containing the scores for each model across all runs.
+    example: asw = {'model1':model1_scores, 'model2': model2_scores, 'model3': model3_scores}, where model#_scores=[run1, run2, run3, run4, run5]
+    """
+    legend = asw.keys()
+    asw = list(asw.values())
+    ari = list(ari.values())
+    nmi = list(nmi.values())
+    metrics = [asw, ari, nmi]
+    ticks_pos = []
+
+    n_boxes = len(asw)
+    
+    if ax is None:
+        fig = plt.figure()
+        ax = plt.axes()
+
+    init = 1
+    for i in range(3):
+        stop = init + n_boxes
+        bp_pos = range(init, stop)
+        ticks_pos.append(np.mean(bp_pos))
+
+        bp = plt.boxplot(metrics[i], positions=bp_pos, widths=0.6, patch_artist=True)
+        setBoxColors(bp, colors)
+        
+        init = stop + 1
+
+    if do_legend is True:
+        handles = []
+        for i in range(n_boxes):
+            # draw temporary lines and use them to create a legend
+            h, = plt.plot([0,0], colors[i])
+            handles.append(h)
+
+        if show_legend:
+            plt.legend(handles, legend, frameon=True)
+            _ = [h.set_visible(False) for h in handles]
+    
+    # set axes limits and labels
+    if show_legend:
+        plt.xlim(0,n_boxes*2 + 5)
+    else:
+        plt.xlim(0, stop)
+    ax.set_xticklabels(['ASW', 'ARI', 'NMI'])
+    ax.set_xticks(ticks_pos)
+
+    if ylim is not None:
+        plt.ylim(ylim)
+
+    if ylabel is not None:
+        plt.ylabel(ylabel)
+    
+    if title is not None:
+        plt.title(title)
+
+    if not show_legend and do_legend:
+        return ax, handles
+    
+    return ax
+
+def _loglikelihood_cv(train_ll, test_ll, ax=None, title=None, ylabel=None,
+                            colors = ['blue', 'red', 'green', 'orange', 'yellow'], do_legend=True, show_legend=False, ylim=None):
+    """
+    asw, ari and nmi are, each one, a list containing the scores for each model across all runs.
+    example: asw = {'model1':model1_scores, 'model2': model2_scores, 'model3': model3_scores}, where model#_scores=[run1, run2, run3, run4, run5]
+    """
+    legend = train_ll.keys()
+    train_ll = list(train_ll.values())
+    test_ll = list(test_ll.values())
+    metrics = [train_ll, test_ll]
+    ticks_pos = []
+
+    n_boxes = len(train_ll)
+    
+    if ax is None:
+        fig = plt.figure()
+        ax = plt.axes()
+
+    init = 1
+    for i in range(2):
+        stop = init + n_boxes
+        bp_pos = range(init, stop)
+        ticks_pos.append(np.mean(bp_pos))
+
+        bp = plt.boxplot(metrics[i], positions=bp_pos, widths=0.6, patch_artist=True)
+        setBoxColors(bp, colors)
+        
+        init = stop + 1
+
+    if do_legend is True:
+        handles = []
+        for i in range(n_boxes):
+            # draw temporary lines and use them to create a legend
+            h, = plt.plot([0,0], colors[i])
+            handles.append(h)
+
+        if show_legend:
+            plt.legend(handles, legend, frameon=True)
+            _ = [h.set_visible(False) for h in handles]
+    
+    # set axes limits and labels
+    if show_legend:
+        plt.xlim(0,n_boxes*2 + 5)
+    else:
+        plt.xlim(0, stop)
+    ax.set_xticklabels(['Train LL', 'Test LL'])
+    ax.set_xticks(ticks_pos)
+
+    if ylim is not None:
+        plt.ylim(ylim)
+
+    if ylabel is not None:
+        plt.ylabel(ylabel)
+    
+    if title is not None:
+        plt.title(title)
+
+    if not show_legend and do_legend:
+        return ax, handles
+    
+    return ax
+
+def _dropimperr_boxplot(dropimp_err, ax=None, title=None, ylabel=None,
+                            colors = ['blue', 'red', 'green', 'orange', 'yellow'], do_legend=True, show_legend=False, ylim=None):
+    """
+    dropimp_err is a list containing the dropout imputation error for each model across all runs.
+    example: dropimp_err = {'model1':model1_scores, 'model2': model2_scores, 'model3': model3_scores}, where model#_scores=[run1, run2, run3, run4, run5]
+    """
+    legend = asw.keys()
+    asw = list(asw.values())
+    metrics = [asw, ari, nmi]
+    ticks_pos = []
+
+    n_boxes = len(asw)
+    
+    if ax is None:
+        fig = plt.figure()
+        ax = plt.axes()
+
+    init = 1
+    for i in range(3):
+        stop = init + n_boxes
+        bp_pos = range(init, stop)
+        ticks_pos.append(np.mean(bp_pos))
+
+        bp = plt.boxplot(metrics[i], positions=bp_pos, widths=0.6, patch_artist=True)
+        setBoxColors(bp, colors)
+        
+        init = stop + 1
+
+    if do_legend is True:
+        handles = []
+        for i in range(n_boxes):
+            # draw temporary lines and use them to create a legend
+            h, = plt.plot([0,0], colors[i])
+            handles.append(h)
+
+        if show_legend:
+            plt.legend(handles, legend, frameon=True)
+            _ = [h.set_visible(False) for h in handles]
+    
+    # set axes limits and labels
+    if show_legend:
+        plt.xlim(0,n_boxes*2 + 5)
+    else:
+        plt.xlim(0, stop)
+    ax.set_xticklabels(['ASW', 'ARI', 'NMI'])
+    ax.set_xticks(ticks_pos)
+
+    if ylim is not None:
+        plt.ylim(ylim)
+
+    if ylabel is not None:
+        plt.ylabel(ylabel)
+    
+    if title is not None:
+        plt.title(title)
+
+    if not show_legend and do_legend:
+        return ax, handles
+    
+    return ax

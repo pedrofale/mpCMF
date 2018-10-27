@@ -44,8 +44,9 @@ class KLqp(ABC):
 			if nb:
 				print('Considering NB structure.')
 				# Force NB by making shape=rate on the scaling factor (see https://arxiv.org/abs/1801.01708)
-				# This makes a Gamma with mean 1 and variance var_llib
-				alpha = .1
+				# This makes a Gamma with mean 1 and variance 1/alpha
+				# Inverse dispersion parameter is 
+				alpha = 1.
 				self.nu[0] = alpha * np.ones((self.N,))
 				self.nu[1] = alpha * np.ones((self.N,))
 
@@ -232,10 +233,10 @@ class KLqp(ABC):
 		E_log_d = E_d # NxP
 		E_log_l = digamma(n[0]) - np.log(n[1]) # Nx1
 
-		E_log_pz = self.alpha[0] * np.log(self.alpha[1]) - gammaln(self.alpha[0]) + (self.alpha[0] - 1)*E_log_z - self.alpha[1]*E_z # NxK
-		E_log_pw = self.beta[0] * np.log(self.beta[1]) - gammaln(self.beta[0]) + (self.beta[0] - 1)*E_log_w - self.beta[1]*E_w # PxK
+		E_log_pz = self.alpha[0, 0, :] * np.log(self.alpha[1, 0, :]) - gammaln(self.alpha[0, 0, :]) + (self.alpha[0, 0, :] - 1)*E_log_z - self.alpha[1, 0, :]*E_z # NxK
+		E_log_pw = self.beta[0, 0, :] * np.log(self.beta[1, 0, :]) - gammaln(self.beta[0]) + (self.beta[0, 0, :] - 1)*E_log_w - self.beta[1, 0, :]*E_w # PxK
 		E_log_pd = E_d*np.log(self.pi_D[0, :] + 1e-7) + (1.-E_d)*np.log(1.-self.pi_D[0, :] + 1e-7) # NxP
-		E_log_pl = self.nu[0] * np.log(self.nu[1]) - gammaln(self.nu[0]) + (self.nu[0] - 1)*E_log_l - self.nu[1]*E_l # NxP
+		E_log_pl = self.nu[0, 0] * np.log(self.nu[1,0]) - gammaln(self.nu[0,0]) + (self.nu[0,0] - 1)*E_log_l - self.nu[1,0]*E_l # NxP
 
 		E_log_qz = a[0] * np.log(a[1]) - gammaln(a[0]) + (a[0] - 1)*E_log_z - a[1]*E_z
 		E_log_qw = self.b[0] * np.log(self.b[1]) - gammaln(self.b[0]) + (self.b[0] - 1)*E_log_w - self.b[1]*E_w

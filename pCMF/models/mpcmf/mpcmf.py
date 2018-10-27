@@ -8,6 +8,8 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import adjusted_rand_score
 from sklearn.metrics.cluster import normalized_mutual_info_score
 
+from scipy.stats import pearsonr
+
 class mpCMF(object):
 	def __init__(self, Y_train, c_train=None, b_train=None, D_train=None, X_train=None, Y_test=None, c_test=None, b_test=None, n_components=10, empirical_bayes=True, nb=True,
 					minibatch_size=None, alpha=None, beta=None, pi_D=None, pi_S=None, zero_inflation=True, sparsity=True, scalings=True, batch_correction=True, do_imp=False, 
@@ -15,6 +17,8 @@ class mpCMF(object):
 		self.mode = mode
 		if self.mode not in ["gibbs", "klqp"]:
 			print("Mode \'{}\' unrecognized. Setting to \'klqp\'".format(self.mode))
+
+		self.nb = nb
 
 		self.Y_train = Y_train
 		self.c_train = c_train
@@ -127,7 +131,7 @@ class mpCMF(object):
 
 		if minibatch_size is None:
 			if self.batches:
-				self.inf = cavi_batch.CoordinateAscentVI(Y_train, self.alpha, self.beta, b_train=b_train, b_test=b_test, X_test=self.Y_test, pi_D=self.pi_D, pi_S=self.pi_S, mu_lib=mu_lib, var_lib=var_lib, empirical_bayes=empirical_bayes)
+				self.inf = cavi_batch.CoordinateAscentVI(Y_train, self.alpha, self.beta, b_train=b_train, b_test=b_test, X_test=self.Y_test, pi_D=self.pi_D, pi_S=self.pi_S, mu_lib=mu_lib, var_lib=var_lib, empirical_bayes=empirical_bayes, nb=nb)
 			else:
 				self.inf = cavi.CoordinateAscentVI(Y_train, self.alpha, self.beta, X_test=self.Y_test, pi_D=self.pi_D, pi_S=self.pi_S, mu_lib=mu_lib, var_lib=var_lib, empirical_bayes=empirical_bayes, nb=nb)
 		else:
@@ -137,7 +141,7 @@ class mpCMF(object):
 				self.inf = svi.StochasticVI(Y_train, self.alpha, self.beta, X_test=self.Y_test, pi_D=self.pi_D, pi_S=self.pi_S, mu_lib=mu_lib, var_lib=var_lib, minibatch_size=minibatch_size, empirical_bayes=empirical_bayes)
 
 	def run(self, max_iter=10, min_iter=1, tol=None, sampling_rate=1, max_time=60, calc_elbo=True, calc_test=False, calc_silh=False, 
-		do_tsne=True, do_dll=True, do_holl=True, do_silh=True, do_imp=True, do_batch=False, verbose=False):
+		do_tsne=True, do_dll=True, do_holl=True, do_silh=True, do_imp=True, do_batch=False, do_corr=False, verbose=False):
 		if verbose:
 			print('Running {0}...'.format(self.name))
 
@@ -168,6 +172,8 @@ class mpCMF(object):
 
 		if self.do_imp:
 			est_mean = self.est_R
+			if self.nb:
+				est_mean = self.est_norm_R
 			X_original = self.Y_train
 
 			self.dropimp_err = utils.imputation_error(est_mean, X_original, 
@@ -213,6 +219,17 @@ class mpCMF(object):
 				self.ari = adjusted_rand_score(self.c_train, res)
 
 				self.nmi = normalized_mutual_info_score(self.c_train, res)
+
+			if do_corr:
+				if self.est_U.shape[1] == 2:
+					self.library_size = np.sum(self.Y_train, axis=1)
+					self.detection_rate = np.sum(self.Y_train != 0, axis=1) / self.Y_train.shape[1]
+
+					self.corr_1_ls = np.abs(pearsonr(self.est_U[:, 0], self.library_size)[0])
+					self.corr_1_dr = np.abs(pearsonr(self.est_U[:, 0], self.detection_rate)[0])
+					
+					self.corr_2_ls = np.abs(pearsonr(self.est_U[:, 1], self.library_size)[0])
+					self.corr_2_dr = np.abs(pearsonr(self.est_U[:, 1], self.detection_rate)[0])
 
 		if verbose:
 			print('Done.')
