@@ -7,4 +7,4 @@ pandas
 sympy
 nose
 seaborn
-scikit-learn
+sklearn

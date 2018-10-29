@@ -12,13 +12,14 @@ from scipy.stats import pearsonr
 
 class mpCMF(object):
 	def __init__(self, Y_train, c_train=None, b_train=None, D_train=None, X_train=None, Y_test=None, c_test=None, b_test=None, n_components=10, empirical_bayes=True, nb=True,
-					minibatch_size=None, alpha=None, beta=None, pi_D=None, pi_S=None, zero_inflation=True, sparsity=True, scalings=True, batch_correction=True, do_imp=False, 
+					minibatch_size=None, alpha=None, beta=None, disp=1., pi_D=None, pi_S=None, zero_inflation=True, sparsity=True, scalings=True, batch_correction=True, do_imp=False, 
 					name='m-pCMF', mode='klqp'):
 		self.mode = mode
 		if self.mode not in ["gibbs", "klqp"]:
 			print("Mode \'{}\' unrecognized. Setting to \'klqp\'".format(self.mode))
 
 		self.nb = nb
+		self.disp = disp
 
 		self.Y_train = Y_train
 		self.c_train = c_train
@@ -131,9 +132,9 @@ class mpCMF(object):
 
 		if minibatch_size is None:
 			if self.batches:
-				self.inf = cavi_batch.CoordinateAscentVI(Y_train, self.alpha, self.beta, b_train=b_train, b_test=b_test, X_test=self.Y_test, pi_D=self.pi_D, pi_S=self.pi_S, mu_lib=mu_lib, var_lib=var_lib, empirical_bayes=empirical_bayes, nb=nb)
+				self.inf = cavi_batch.CoordinateAscentVI(Y_train, self.alpha, self.beta, disp=self.disp, b_train=b_train, b_test=b_test, X_test=self.Y_test, pi_D=self.pi_D, pi_S=self.pi_S, mu_lib=mu_lib, var_lib=var_lib, empirical_bayes=empirical_bayes, nb=nb)
 			else:
-				self.inf = cavi.CoordinateAscentVI(Y_train, self.alpha, self.beta, X_test=self.Y_test, pi_D=self.pi_D, pi_S=self.pi_S, mu_lib=mu_lib, var_lib=var_lib, empirical_bayes=empirical_bayes, nb=nb)
+				self.inf = cavi.CoordinateAscentVI(Y_train, self.alpha, self.beta, disp=self.disp, X_test=self.Y_test, pi_D=self.pi_D, pi_S=self.pi_S, mu_lib=mu_lib, var_lib=var_lib, empirical_bayes=empirical_bayes, nb=nb)
 		else:
 			if self.batches:
 				self.inf = svi_batch.StochasticVI(Y_train, self.alpha, self.beta, b_train=b_train, b_test=b_test, X_test=self.Y_test, pi_D=self.pi_D, pi_S=self.pi_S, mu_lib=mu_lib, var_lib=var_lib, minibatch_size=minibatch_size, empirical_bayes=empirical_bayes)

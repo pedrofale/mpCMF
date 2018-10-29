@@ -34,11 +34,20 @@ class KLqp(ABC):
 		self.beta = beta # 2xPxK
 		
 		# cell-specific scalings
+		# cell-specific scalings
 		self.nu = np.ones((2, self.N))
 		if self.scaling:
 			print('Considering cell-specific scalings.')
 			self.nu[0] = mu_lib**2 / var_lib
 			self.nu[1] = mu_lib / var_lib
+			if nb:
+				print('Considering NB structure.')
+				# Force NB by making shape=rate on the scaling factor (see https://arxiv.org/abs/1801.01708)
+				# This makes a Gamma with mean 1 and variance 1/alpha
+				# Inverse dispersion parameter is 
+				alpha = 1.
+				self.nu[0] = alpha * np.ones((self.N,))
+				self.nu[1] = alpha * np.ones((self.N,))
 
 		# zero-Inflation
 		if self.zi:

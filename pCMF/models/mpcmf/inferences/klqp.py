@@ -12,7 +12,7 @@ from pCMF.misc.utils import log_likelihood_L, log_likelihood_L_batches, sample_g
 from abc import ABC, abstractmethod
 
 class KLqp(ABC):
-	def __init__(self, X, alpha, beta, b_train=None, b_test=None, X_test=None, pi_D=None, pi_S=None, mu_lib=None, var_lib=None, empirical_bayes=False, nb=True):
+	def __init__(self, X, alpha, beta, b_train=None, disp=1., b_test=None, X_test=None, pi_D=None, pi_S=None, mu_lib=None, var_lib=None, empirical_bayes=False, nb=True):
 		self.X = X
 		self.X_test = X_test
 		self.N = X.shape[0] # no of observations
@@ -46,9 +46,8 @@ class KLqp(ABC):
 				# Force NB by making shape=rate on the scaling factor (see https://arxiv.org/abs/1801.01708)
 				# This makes a Gamma with mean 1 and variance 1/alpha
 				# Inverse dispersion parameter is 
-				alpha = 1.
-				self.nu[0] = alpha * np.ones((self.N,))
-				self.nu[1] = alpha * np.ones((self.N,))
+				self.nu[0] = disp * np.ones((self.N,))
+				self.nu[1] = disp * np.ones((self.N,))
 
 		# zero-Inflation
 		if self.zi:
