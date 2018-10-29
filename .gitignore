@@ -5,4 +5,4 @@ venv/
 SVIpCMF.egg-info/
 sftp-config.json
 *.npy
-data/
+.data/
